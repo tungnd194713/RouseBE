@@ -44,6 +44,11 @@ const userSchema = mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    applied_courses: [
+      {
+        type: mongoose.SchemaTypes.ObjectId,
+      },
+    ],
   },
   {
     timestamps: true,

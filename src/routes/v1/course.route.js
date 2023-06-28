@@ -5,5 +5,6 @@ const courseController = require('../../controllers/course.controller');
 const router = express.Router();
 
 router.get('/', courseController.getCourse);
+router.post('/:moduleId/update-module-progress', courseController.updateModuleProgress);
 
 module.exports = router;

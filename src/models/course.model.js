@@ -15,20 +15,16 @@ const courseSchema = mongoose.Schema(
       {
         name: String,
         description: String,
-        content: [
+        video: String,
+        check_point_quizzes: [
           {
-            video: String,
-            check_point_quizzes: [
+            question: String,
+            correct_answer: Number,
+            check_time: Number,
+            answers: [
               {
-                question: String,
-                correct_answer: Number,
-                check_time: Number,
-                answer: [
-                  {
-                    text: String,
-                    value: Number,
-                  },
-                ],
+                text: String,
+                value: Number,
               },
             ],
           },

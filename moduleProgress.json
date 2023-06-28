@@ -1,0 +1,15 @@
+{
+  "user_id": "649be04599a717581883ccd7",
+  "module_id": "649aaf90849b551e48c28115",
+  "video_played_time": "0",
+  "quizzes_answered": [
+    {
+      "quizz_id": "ObjectId",
+      "chosen_answer": "Number",
+      "is_correct": "Boolean",
+      "is_answered": "Boolean",
+      "answered_at": "Datetime"
+    }  
+  ],
+  "progress": "0"
+}
