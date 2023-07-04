@@ -27,8 +27,8 @@ const getCourse = async () => {
 //   "id": "649be3fc50bf7d37fa67257e"
 // }
 const updateModuleProgress = async (moduleId, updateBody) => {
-  await ModuleProgress.findByIdAndUpdate(moduleId, updateBody);
-  return 'Success';
+  const result = await ModuleProgress.findByIdAndUpdate(moduleId, updateBody);
+  return result;
 };
 
 module.exports = {
