@@ -6,3 +6,5 @@ module.exports.Module = require('./module.model');
 module.exports.Note = require('./note.model');
 module.exports.Discussion = require('./discussion.model');
 module.exports.DiscussionReply = require('./discussionReply.model');
+module.exports.ModuleTest = require('./moduleTest.model');
+module.exports.ModuleTestSubmission = require('./moduleTestSubmission.model');

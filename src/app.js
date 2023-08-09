@@ -1,4 +1,5 @@
 const express = require('express');
+const session = require('express-session');
 const helmet = require('helmet');
 const xss = require('xss-clean');
 const mongoSanitize = require('express-mongo-sanitize');
@@ -42,7 +43,9 @@ app.use(cors());
 app.options('*', cors());
 
 // jwt authentication
+app.use(session({ secret: 'anything' }));
 app.use(passport.initialize());
+app.use(passport.session());
 passport.use('jwt', jwtStrategy);
 
 // limit repeated failed requests to auth endpoints

@@ -24,11 +24,17 @@ const moduleProgressSchema = mongoose.Schema(
       },
     ],
     progress: Number,
+    exam_done: Boolean,
+    exam_rate: {
+      type: String,
+      enum: ['Weak', 'Moderate', 'Good'],
+      required: true,
+    },
   },
   {
     timestamps: true,
     collection: 'module_progresses',
-  },
+  }
 );
 
 // add plugin that converts mongoose to json

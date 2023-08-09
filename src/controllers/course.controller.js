@@ -12,7 +12,13 @@ const updateModuleProgress = catchAsync(async (req, res) => {
   res.status(httpStatus.OK).send(result);
 });
 
+const getUserCourse = catchAsync(async (req, res) => {
+  const courses = await courseService.getUserCourse(req.user._id);
+  res.status(httpStatus.OK).send(courses);
+});
+
 module.exports = {
   getCourse,
   updateModuleProgress,
+  getUserCourse,
 };

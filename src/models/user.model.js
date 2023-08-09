@@ -47,6 +47,7 @@ const userSchema = mongoose.Schema(
     applied_courses: [
       {
         type: mongoose.SchemaTypes.ObjectId,
+        ref: 'Course',
       },
     ],
   },

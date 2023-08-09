@@ -25,6 +25,15 @@ const discussionSchema = mongoose.Schema(
         ref: 'User',
       },
     ],
+    noted_video_time: {
+      type: Number,
+    },
+    discussionReplies: [
+      {
+        type: mongoose.SchemaTypes.ObjectId,
+        ref: 'DiscussionReply',
+      },
+    ],
   },
   {
     timestamps: true,

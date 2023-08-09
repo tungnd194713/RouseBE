@@ -11,26 +11,7 @@ const courseSchema = mongoose.Schema(
       type: String,
       trim: true,
     },
-    modules: [
-      {
-        name: String,
-        description: String,
-        video: String,
-        check_point_quizzes: [
-          {
-            question: String,
-            correct_answer: Number,
-            check_time: Number,
-            answers: [
-              {
-                text: String,
-                value: Number,
-              },
-            ],
-          },
-        ],
-      },
-    ],
+    modules: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Module' }],
     // password: {
     //   type: String,
     //   required: true,
