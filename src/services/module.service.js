@@ -1,7 +1,8 @@
 /* eslint-disable camelcase */
 const httpStatus = require('http-status');
 const ApiError = require('../utils/ApiError');
-const { Discussion, DiscussionReply, Note, ModuleTest, ModuleTestSubmission, ModuleProgress } = require('../models');
+const { Discussion, DiscussionReply, Note, ModuleTest, ModuleTestSubmission, ModuleProgress, Module } = require('../models');
+const RoadMap = require('../models/roadmap.model');
 
 const getNotes = async (module_id, user_id) => {
   const noteList = await Note.find({ module_id, user_id });
@@ -125,6 +126,49 @@ const submitExam = async (user_id, exam_id, body) => {
   return submission;
 };
 
+const seedData = async () => {
+  const roadmapData = [
+    {
+      name: 'Junior Full Stack Developer',
+      description: 'How to become a frontend developer',
+      mastery: 'Beginner',
+      categoryId: 1,
+      subCategoryId: 1,
+      milestones: [
+        {
+          order: 1,
+          title: 'HTML and CSS',
+          estimated_time: 168,
+          modules: [
+            await Module.findOne({ name: 'HTML Basics' }),
+            await Module.findOne({ name: 'CSS Fundamentals' }),
+            await Module.findOne({ name: 'JavaScript Essentials' }),
+          ],
+        },
+        {
+          order: 2,
+          title: 'NodeJS and Framework',
+          estimated_time: 672,
+          modules: [
+            await Module.findOne({ name: 'MongoDB Basics' }),
+            await Module.findOne({ name: 'Node.js Fundamentals' }),
+            await Module.findOne({ name: 'Express.js Basics' }),
+            await Module.findOne({ name: 'React Basics' }),
+          ],
+        },
+        {
+          order: 3,
+          title: 'Deployment Manager',
+          estimated_time: 336,
+          modules: [await Module.findOne({ name: 'Docker Basics' }), await Module.findOne({ name: 'CI/CD Principles' })],
+        },
+      ],
+    },
+    // Add more roadmaps as needed
+  ];
+  await RoadMap.create(roadmapData);
+};
+
 module.exports = {
   getNotes,
   takeNote,
@@ -135,4 +179,5 @@ module.exports = {
   toggleUpvoteDiscussion,
   getExam,
   submitExam,
+  seedData,
 };

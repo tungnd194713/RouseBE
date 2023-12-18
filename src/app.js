@@ -7,6 +7,8 @@ const compression = require('compression');
 const cors = require('cors');
 const passport = require('passport');
 const httpStatus = require('http-status');
+// eslint-disable-next-line import/no-extraneous-dependencies
+const bodyParser = require('body-parser');
 const config = require('./config/config');
 const morgan = require('./config/morgan');
 const { jwtStrategy } = require('./config/passport');
@@ -66,5 +68,8 @@ app.use(errorConverter);
 
 // handle error
 app.use(errorHandler);
+
+// body parser
+app.use(bodyParser.urlencoded({ extended: false }));
 
 module.exports = app;

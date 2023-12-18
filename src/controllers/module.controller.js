@@ -54,6 +54,14 @@ const submitExam = catchAsync(async (req, res) => {
   res.status(httpStatus.OK).send(result);
 });
 
+const seedData = catchAsync(async (req, res) => {
+  const result = await moduleService.seedData();
+  if (!result) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'Exam not found');
+  }
+  res.status(httpStatus.OK).send(result);
+});
+
 module.exports = {
   getNotes,
   takeNote,
@@ -64,4 +72,5 @@ module.exports = {
   toggleUpvoteDiscussion,
   getExam,
   submitExam,
+  seedData,
 };

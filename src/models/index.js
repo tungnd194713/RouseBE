@@ -8,3 +8,4 @@ module.exports.Discussion = require('./discussion.model');
 module.exports.DiscussionReply = require('./discussionReply.model');
 module.exports.ModuleTest = require('./moduleTest.model');
 module.exports.ModuleTestSubmission = require('./moduleTestSubmission.model');
+module.exports.RoadMap = require('./roadmap.model');

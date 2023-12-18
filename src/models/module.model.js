@@ -6,6 +6,7 @@ const moduleSchema = mongoose.Schema(
     name: String,
     description: String,
     video: String,
+    estimated_time: Number, // Hours
     check_point_quizzes: [
       {
         question: String,

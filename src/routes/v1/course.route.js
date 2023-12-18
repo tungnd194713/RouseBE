@@ -8,6 +8,7 @@ const router = express.Router();
 
 router.get('/', courseController.getCourse);
 router.get('/applied-courses', auth(), courseController.getUserCourse);
+router.post('/module/seed', moduleController.seedData);
 router.post('/:moduleId/update-module-progress', courseController.updateModuleProgress);
 router.get('/module/:module_id/note', auth(), moduleController.getNotes);
 router.post('/module/:module_id/take-note', auth(), moduleController.takeNote);
