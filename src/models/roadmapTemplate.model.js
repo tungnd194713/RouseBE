@@ -1,9 +1,9 @@
 const mongoose = require('mongoose');
 const { toJSON, paginate } = require('./plugins');
 
-const roadmapSchema = mongoose.Schema(
+const roadmapTemplateSchema = mongoose.Schema(
   {
-    name: {
+    title: {
       // Junior frontend developer
       type: String,
       trim: true,
@@ -34,9 +34,9 @@ const roadmapSchema = mongoose.Schema(
   }
 );
 
-roadmapSchema.plugin(toJSON);
-roadmapSchema.plugin(paginate);
+roadmapTemplateSchema.plugin(toJSON);
+roadmapTemplateSchema.plugin(paginate);
 
-const RoadMap = mongoose.model('RoadMap', roadmapSchema, 'roadmaps');
+const RoadmapTemplate = mongoose.model('RoadmapTemplate', roadmapTemplateSchema, 'roadmapTemplates');
 
-module.exports = RoadMap;
+module.exports = RoadmapTemplate;

@@ -9,3 +9,7 @@ module.exports.DiscussionReply = require('./discussionReply.model');
 module.exports.ModuleTest = require('./moduleTest.model');
 module.exports.ModuleTestSubmission = require('./moduleTestSubmission.model');
 module.exports.RoadMap = require('./roadmap.model');
+module.exports.RoadmapTemplate = require('./roadmapTemplate.model');
+module.exports.Milestone = require('./milestone.model');
+module.exports.Category = require('./category.model');
+module.exports.SpecCategory = require('./specCategory.model');
