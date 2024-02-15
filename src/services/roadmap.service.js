@@ -2,7 +2,7 @@
 const httpStatus = require('http-status');
 const mongoose = require('mongoose');
 const ApiError = require('../utils/ApiError');
-const { RoadMap, Milestone, Category, SpecCategory, RoadmapTemplate } = require('../models');
+const { RoadMap, Milestone, Category, SpecCategory, RoadmapTemplate, UserRoadMap } = require('../models');
 
 async function findRoadmap(categoryId, subCategoryId, mastery) {
   const query = {};
@@ -73,6 +73,27 @@ const buildRoadmap = async (params) => {
   delete returnedRoadmap.base_milestone;
 
   return returnedRoadmap;
+};
+
+const applyRoadmap = async (params) => {
+  const appliedMilestones = [];
+  Array.from(params.milestone).forEach((milestone) => {
+    appliedMilestones.push({
+      milestone_id: milestone.id,
+      modules: Array.from(milestone.modules).map((item) => ({
+        module_id: item.id,
+      })),
+    });
+  });
+  UserRoadMap.create({
+    title: params.title,
+    user_id: params.user_id,
+    description: params.description,
+    categoryId: params.category_id,
+    subCategoryId: params.sub_category_id,
+    roadmap_milestone: appliedMilestones,
+    applied_date: Date.now(),
+  });
 };
 
 const seedCategory = async () => {
@@ -404,4 +425,5 @@ module.exports = {
   seedCategory,
   seedMilestones,
   seedRoadmap,
+  applyRoadmap,
 };

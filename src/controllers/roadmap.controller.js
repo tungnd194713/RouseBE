@@ -16,6 +16,15 @@ const buildRoadMap = catchAsync(async (req, res) => {
   res.status(httpStatus.OK).send(roadmap);
 });
 
+const applyRoadmap = catchAsync(async (req, res) => {
+  try {
+    await roadmapService.applyRoadmap(req.body);
+    res.status(httpStatus.OK).send('Applied succeed');
+  } catch (e) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'No roadmap applied');
+  }
+});
+
 const seedCategory = catchAsync(async (req, res) => {
   try {
     const result = await roadmapService.seedCategory();
@@ -46,6 +55,7 @@ const seedRoadmap = catchAsync(async (req, res) => {
 module.exports = {
   findRoadMap,
   buildRoadMap,
+  applyRoadmap,
   seedCategory,
   seedMilestones,
   seedRoadmap,

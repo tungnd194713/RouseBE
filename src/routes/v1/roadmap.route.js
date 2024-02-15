@@ -7,6 +7,7 @@ const router = express.Router();
 
 router.post('/find-roadmap', roadmapController.findRoadMap);
 router.post('/build-roadmap', roadmapController.buildRoadMap);
+router.post('/apply-roadmap', roadmapController.applyRoadmap);
 router.post('/seed-category', roadmapController.seedCategory);
 router.post('/seed-milestone', roadmapController.seedMilestones);
 router.post('/seed-roadmap', roadmapController.seedRoadmap);
