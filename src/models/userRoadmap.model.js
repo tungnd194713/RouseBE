@@ -32,9 +32,22 @@ const userRoadmapSchema = mongoose.Schema(
         order: Number,
       },
     ],
+    current_milestone: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Milestone',
+      // required: true,
+    },
+    current_module: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Module',
+      // required: true,
+    },
     roadmap_milestone: [
       {
-        milestone_id: mongoose.Schema.Types.ObjectId,
+        milestone: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'Milestone',
+        },
         is_skipped: {
           type: Boolean,
           required: true,
@@ -94,15 +107,12 @@ const userRoadmapSchema = mongoose.Schema(
     finished_date: Date,
     roadmap_info: {
       estimated_time: {
-        name: String, // "3 weeks"
-        value: Number, // 504 (hours)
+        type: Number,
       },
-      experience_level: [
-        {
-          type: String,
-          enum: ['Beginner', 'Intermediate', 'Advanced'],
-        },
-      ],
+      experience_level: {
+        type: String,
+        enum: ['Beginner', 'Intermediate', 'Advanced'],
+      },
       skill_set: [
         {
           type: mongoose.Schema.Types.ObjectId,

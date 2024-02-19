@@ -14,3 +14,4 @@ module.exports.Milestone = require('./milestone.model');
 module.exports.Category = require('./category.model');
 module.exports.SpecCategory = require('./specCategory.model');
 module.exports.UserRoadMap = require('./userRoadmap.model');
+module.exports.SkillSet = require('./skillSet.model');

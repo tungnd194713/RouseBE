@@ -32,13 +32,13 @@ const milestoneSchema = mongoose.Schema(
     main_goal: [
       {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'MainGoal',
+        ref: 'Category',
       },
     ],
     specific_goal: [
       {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'SpecificGoal',
+        ref: 'SpecCategory',
       },
     ],
     modules: [

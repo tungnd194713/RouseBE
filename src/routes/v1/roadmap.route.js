@@ -5,9 +5,12 @@ const roadmapController = require('../../controllers/roadmap.controller');
 
 const router = express.Router();
 
+router.get('/fetch-categories', roadmapController.fetchCategories);
+router.get('/fetch-spec-categories', roadmapController.fetchSpecCategories);
 router.post('/find-roadmap', roadmapController.findRoadMap);
 router.post('/build-roadmap', roadmapController.buildRoadMap);
 router.post('/apply-roadmap', roadmapController.applyRoadmap);
+router.get('/get-user-roadmap', roadmapController.getUserRoadmap);
 router.post('/seed-category', roadmapController.seedCategory);
 router.post('/seed-milestone', roadmapController.seedMilestones);
 router.post('/seed-roadmap', roadmapController.seedRoadmap);

@@ -3,6 +3,16 @@ const { roadmapService } = require('../services');
 const catchAsync = require('../utils/catchAsync');
 const ApiError = require('../utils/ApiError');
 
+const fetchCategories = catchAsync(async (req, res) => {
+  const roadmap = await roadmapService.fetchCategories();
+  res.status(httpStatus.OK).send(roadmap);
+});
+
+const fetchSpecCategories = catchAsync(async (req, res) => {
+  const roadmap = await roadmapService.fetchSpecCategories(req.query.category_id);
+  res.status(httpStatus.OK).send(roadmap);
+});
+
 const findRoadMap = catchAsync(async (req, res) => {
   const roadmap = await roadmapService.findRoadmap(req.params.category_id, req.params.sub_category_id, req.params.mastery);
   res.status(httpStatus.OK).send(roadmap);
@@ -23,6 +33,11 @@ const applyRoadmap = catchAsync(async (req, res) => {
   } catch (e) {
     throw new ApiError(httpStatus.NOT_FOUND, 'No roadmap applied');
   }
+});
+
+const getUserRoadmap = catchAsync(async (req, res) => {
+  const roadmap = await roadmapService.getUserRoadmap(req.query.user_id);
+  res.status(httpStatus.OK).send(roadmap);
 });
 
 const seedCategory = catchAsync(async (req, res) => {
@@ -53,9 +68,12 @@ const seedRoadmap = catchAsync(async (req, res) => {
 });
 
 module.exports = {
+  fetchCategories,
+  fetchSpecCategories,
   findRoadMap,
   buildRoadMap,
   applyRoadmap,
+  getUserRoadmap,
   seedCategory,
   seedMilestones,
   seedRoadmap,

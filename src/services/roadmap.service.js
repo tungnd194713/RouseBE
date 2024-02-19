@@ -26,6 +26,14 @@ const createMilestone = async (params) => {
   return Milestone.create({ ...params });
 };
 
+const fetchCategories = async () => {
+  return Category.find({});
+};
+
+const fetchSpecCategories = async (categoryId) => {
+  return SpecCategory.find({ category_id: categoryId });
+};
+
 const buildRoadmap = async (params) => {
   // params = {
   //   main_goal: ObjectId,
@@ -43,9 +51,7 @@ const buildRoadmap = async (params) => {
     baseQuery.skill_set = { $in: [params.skill_set] };
   }
   // Execute the query
-  const matchedMilestones = await Milestone.find(baseQuery)
-    .select('-experience_level -main_goal -specific_goal')
-    .populate('skill_set');
+  const matchedMilestones = await Milestone.find(baseQuery).populate('skill_set').populate({ path: 'modules' });
 
   const matchedRoadmap = await RoadmapTemplate.findOne({
     categoryId: { $eq: [params.main_goal] },
@@ -85,12 +91,17 @@ const applyRoadmap = async (params) => {
   const appliedMilestones = [];
   Array.from(params.milestone).forEach((milestone) => {
     appliedMilestones.push({
-      milestone_id: milestone.id,
+      milestone: milestone._id,
       modules: Array.from(milestone.modules).map((item) => ({
-        module_id: item.id,
+        module_id: item._id,
       })),
     });
   });
+  const roadmapInfo = {
+    estimated_time: params.milestone.reduce((time, item) => time + item.estimated_time.value, 0),
+    experience_level: params.experience_level,
+    skill_set: params.skill_set,
+  };
   UserRoadMap.create({
     title: params.title,
     user_id: params.user_id,
@@ -98,8 +109,17 @@ const applyRoadmap = async (params) => {
     categoryId: params.category_id,
     subCategoryId: params.sub_category_id,
     roadmap_milestone: appliedMilestones,
+    roadmap_info: roadmapInfo,
+    current_milestone: appliedMilestones[0].milestone,
+    current_module: appliedMilestones[0].modules[0].module_id,
     applied_date: Date.now(),
   });
+};
+
+const getUserRoadmap = async (user_id) => {
+  return UserRoadMap.findOne({ user_id })
+    .populate('current_module current_milestone')
+    .populate({ path: 'roadmap_milestone', populate: { path: 'milestone' } });
 };
 
 const seedCategory = async () => {
@@ -428,6 +448,9 @@ module.exports = {
   findRoadmap,
   buildRoadmap,
   createMilestone,
+  fetchCategories,
+  fetchSpecCategories,
+  getUserRoadmap,
   seedCategory,
   seedMilestones,
   seedRoadmap,
