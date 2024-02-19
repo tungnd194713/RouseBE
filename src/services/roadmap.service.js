@@ -43,7 +43,9 @@ const buildRoadmap = async (params) => {
     baseQuery.skill_set = { $in: [params.skill_set] };
   }
   // Execute the query
-  const matchedMilestones = await Milestone.find(baseQuery).select('-experience_level -skill_set -main_goal -specific_goal');
+  const matchedMilestones = await Milestone.find(baseQuery)
+    .select('-experience_level -main_goal -specific_goal')
+    .populate('skill_set');
 
   const matchedRoadmap = await RoadmapTemplate.findOne({
     categoryId: { $eq: [params.main_goal] },
@@ -51,6 +53,7 @@ const buildRoadmap = async (params) => {
   });
 
   const roadmapMilestone = [];
+  const skillSet = [];
   const baseRoad = matchedRoadmap.base_milestone;
   baseRoad.forEach((item) => {
     const idMatchedMilestones = matchedMilestones.filter(
@@ -61,6 +64,8 @@ const buildRoadmap = async (params) => {
       const stoneObject = milestone.toObject();
       delete stoneObject.base_milestone_id;
       roadmapMilestone.push(stoneObject);
+      const skill_tags = stoneObject.skill_set.map((skill) => skill.name);
+      skillSet.push([...skill_tags]);
     }
   });
 
@@ -68,6 +73,7 @@ const buildRoadmap = async (params) => {
     title: matchedRoadmap.title,
     description: matchedRoadmap.description,
     milestone: roadmapMilestone,
+    skillTags: skillSet,
   };
 
   delete returnedRoadmap.base_milestone;
