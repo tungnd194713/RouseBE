@@ -65,29 +65,8 @@ const userRoadmapSchema = mongoose.Schema(
         },
         modules: [
           {
-            module_id: mongoose.Schema.Types.ObjectId,
-            video_played_time: {
-              type: Number,
-              default: 0,
-            },
-            quizzes_answered: [
-              {
-                quizz_id: mongoose.SchemaTypes.ObjectId,
-                chosen_answer: Number,
-                is_correct: Boolean,
-                is_answered: Boolean,
-                answered_at: Date,
-              },
-            ],
-            progress: {
-              type: Number,
-              default: 0,
-            },
-            is_finished: {
-              type: Boolean,
-              default: false,
-            },
-            finished_date: Date,
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Module',
           },
         ],
         is_finished: {

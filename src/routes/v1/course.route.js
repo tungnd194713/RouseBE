@@ -6,7 +6,7 @@ const moduleController = require('../../controllers/module.controller');
 
 const router = express.Router();
 
-router.get('/', courseController.getCourse);
+router.get('/module/:module_id', auth(), courseController.getCourse);
 router.get('/applied-courses', auth(), courseController.getUserCourse);
 router.post('/module/seed', moduleController.seedData);
 router.post('/:moduleId/update-module-progress', courseController.updateModuleProgress);

@@ -2,7 +2,7 @@
 const httpStatus = require('http-status');
 const mongoose = require('mongoose');
 const ApiError = require('../utils/ApiError');
-const { RoadMap, Milestone, Category, SpecCategory, RoadmapTemplate, UserRoadMap } = require('../models');
+const { RoadMap, Milestone, Category, SpecCategory, RoadmapTemplate, UserRoadMap, ModuleProgress } = require('../models');
 
 async function findRoadmap(categoryId, subCategoryId, mastery) {
   const query = {};
@@ -92,9 +92,7 @@ const applyRoadmap = async (params) => {
   Array.from(params.milestone).forEach((milestone) => {
     appliedMilestones.push({
       milestone: milestone._id,
-      modules: Array.from(milestone.modules).map((item) => ({
-        module_id: item._id,
-      })),
+      modules: Array.from(milestone.modules).map((item) => item._id),
     });
   });
   const roadmapInfo = {
@@ -111,7 +109,7 @@ const applyRoadmap = async (params) => {
     roadmap_milestone: appliedMilestones,
     roadmap_info: roadmapInfo,
     current_milestone: appliedMilestones[0].milestone,
-    current_module: appliedMilestones[0].modules[0].module_id,
+    current_module: appliedMilestones[0].modules[0],
     applied_date: Date.now(),
   });
 };
@@ -120,6 +118,49 @@ const getUserRoadmap = async (user_id) => {
   return UserRoadMap.findOne({ user_id })
     .populate('current_module current_milestone')
     .populate({ path: 'roadmap_milestone', populate: { path: 'milestone' } });
+};
+
+const getMilestoneModuleProgress = async (milestone_id) => {
+  const milestone = await Milestone.findOne({ _id: milestone_id }).populate('modules');
+  const moduleProgress = await ModuleProgress.find({ module_id: { $in: [...milestone.modules] } });
+  let milestoneModules = [...milestone.modules];
+  milestoneModules = milestoneModules.map((item) => {
+    // eslint-disable-next-line eqeqeq
+    const progress = moduleProgress.find((element) => element.module_id == item.id);
+    if (progress) {
+      return {
+        ...progress.toObject(),
+        ...item.toObject(),
+      };
+    }
+    return {
+      ...item.toObject(),
+      module_id: item._id,
+    };
+  });
+  return milestoneModules;
+};
+
+const completeMilestone = async (milestone_id, user_id) => {
+  const userRoadmap = await UserRoadMap.findOne({ user_id, is_finished: false });
+  // eslint-disable-next-line eqeqeq
+  const milestoneIndex = userRoadmap.roadmap_milestone.findIndex((item) => item.milestone == milestone_id);
+  if (milestoneIndex !== -1) {
+    userRoadmap.roadmap_milestone[milestoneIndex].is_finished = true;
+    userRoadmap.roadmap_milestone[milestoneIndex].progress = 100;
+    userRoadmap.roadmap_milestone[milestoneIndex].finished_date = Date.now();
+    userRoadmap.progress = ((milestoneIndex + 1) / userRoadmap.roadmap_milestone.length) * 100;
+    if (milestoneIndex !== userRoadmap.roadmap_milestone.length - 1) {
+      const newMilestone = await Milestone.findOne({
+        _id: userRoadmap.roadmap_milestone[milestoneIndex + 1].milestone,
+      }).populate('modules');
+      userRoadmap.current_milestone = newMilestone._id;
+      if (newMilestone.modules.length !== 0) {
+        userRoadmap.current_module = newMilestone.modules[0]._id;
+      }
+    }
+    await userRoadmap.save();
+  }
 };
 
 const seedCategory = async () => {
@@ -451,6 +492,8 @@ module.exports = {
   fetchCategories,
   fetchSpecCategories,
   getUserRoadmap,
+  getMilestoneModuleProgress,
+  completeMilestone,
   seedCategory,
   seedMilestones,
   seedRoadmap,
