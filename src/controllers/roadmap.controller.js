@@ -40,6 +40,20 @@ const getUserRoadmap = catchAsync(async (req, res) => {
   res.status(httpStatus.OK).send(roadmap);
 });
 
+const getMilestoneModuleProgress = catchAsync(async (req, res) => {
+  const modules = await roadmapService.getMilestoneModuleProgress(req.params.milestone_id);
+  res.status(httpStatus.OK).send(modules);
+});
+
+const completeMilestone = catchAsync(async (req, res) => {
+  try {
+    await roadmapService.completeMilestone(req.params.milestone_id, req.user._id);
+    res.status(httpStatus.OK).send('Applied succeed');
+  } catch (e) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'No milestone completed');
+  }
+});
+
 const seedCategory = catchAsync(async (req, res) => {
   try {
     const result = await roadmapService.seedCategory();
@@ -74,6 +88,8 @@ module.exports = {
   buildRoadMap,
   applyRoadmap,
   getUserRoadmap,
+  getMilestoneModuleProgress,
+  completeMilestone,
   seedCategory,
   seedMilestones,
   seedRoadmap,

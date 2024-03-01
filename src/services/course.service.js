@@ -1,13 +1,22 @@
 // const httpStatus = require('http-status');
 const mongoose = require('mongoose');
-const { Course, ModuleProgress, User } = require('../models');
+const { ModuleProgress, User, Module } = require('../models');
 
-const getCourse = async () => {
-  const courses = await Course.findOne({}).populate('modules');
-  const moduleProgress = await ModuleProgress.findOne({});
+// eslint-disable-next-line camelcase
+const getCourse = async (_id, user_id) => {
+  const courses = await Module.findOne({ _id });
+  let moduleProgress = await ModuleProgress.findOne({ module_id: _id, user_id }).select('-_id');
+  if (!moduleProgress) {
+    moduleProgress = await ModuleProgress.create({
+      video_played_time: 0,
+      module_id: _id,
+      progress: 0,
+      user_id,
+    });
+  }
   return {
-    ...courses.toJSON(),
-    moduleProgress,
+    ...courses.toObject(),
+    ...moduleProgress.toObject(),
   };
 };
 

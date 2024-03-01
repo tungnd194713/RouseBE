@@ -27,8 +27,27 @@ const websock = async (expressServer) => {
     websocketConnection.on('message', async (message) => {
       const parsedMessage = JSON.parse(message);
       console.log(parsedMessage);
-      const result = await ModuleProgress.findByIdAndUpdate(parsedMessage.progress_id, parsedMessage.module_progress);
-      console.log(result);
+      const currentProgress = await ModuleProgress.findOne({ module_id: parsedMessage.module_id });
+      if (currentProgress) {
+        if (currentProgress.progress < parsedMessage.module_progress.video_played_time) {
+          currentProgress.video_played_time = parsedMessage.module_progress.video_played_time;
+          currentProgress.progress = (parsedMessage.module_progress.video_played_time / parsedMessage.video_duration) * 100;
+          currentProgress
+            .save()
+            .then((updatedUser) => {
+              console.log('User updated successfully:', updatedUser);
+            })
+            .catch((error) => {
+              console.error('Error updating user:', error);
+            });
+        }
+      } else {
+        ModuleProgress.create({
+          ...parsedMessage.module_progress,
+          module_id: parsedMessage.module_id,
+          progress: 0,
+        });
+      }
       websocketConnection.send(JSON.stringify({ message: 'There be gold in them thar hills.' }));
     });
   });

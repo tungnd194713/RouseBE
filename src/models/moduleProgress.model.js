@@ -24,12 +24,19 @@ const moduleProgressSchema = mongoose.Schema(
       },
     ],
     progress: Number,
-    exam_done: Boolean,
+    exam_done: {
+      type: Boolean,
+      default: false,
+    },
     exam_rate: {
       type: String,
       enum: ['Weak', 'Moderate', 'Good'],
-      required: true,
     },
+    is_finished: {
+      type: Boolean,
+      default: false,
+    },
+    finished_date: Date,
   },
   {
     timestamps: true,
