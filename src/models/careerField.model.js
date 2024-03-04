@@ -8,6 +8,17 @@ const careerFieldSchema = mongoose.Schema(
       trim: true,
       required: true,
     },
+		for_you_title: {
+			type: String,
+			trim: true,
+			required: true,
+		},
+		description: {
+			type: String,
+			trim: true,
+			required: true,
+		},
+		related_skills: [mongoose.SchemaTypes.ObjectId],
   },
   {
     timestamps: true,

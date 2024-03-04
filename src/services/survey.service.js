@@ -1,12 +1,49 @@
 const mongoose = require('mongoose');
-const { SurveyQuestion, SurveyOption, CareerField, SurveyFuzzy } = require('../models');
+const { SurveyQuestion, SurveyOption, CareerField, SurveyFuzzy, UserSurveyAnswer } = require('../models');
 
 const getSurveyQuestions = async (params) => {
 	return SurveyQuestion.find({}).populate('options');
 }
 
-const generateResult = async (params) => {
+const generateResult = async (params, user_id) => {
+	const surveyAnswer = await UserSurveyAnswer.findOne({ user_id });
+	if (surveyAnswer) {
+		surveyAnswer.survey_answers = params
+		surveyAnswer.save()
+	} else {
+		await UserSurveyAnswer.create({
+			user_id,
+			survey_answers: params,
+		})
+	}
+	const questionArr = params.map((item) => item.question_id);
+	const optionArr = params.map((item) => item.option_id).flat();
+	const surveyFuzzies = await SurveyFuzzy.find({
+		question_id: { $in: questionArr },
+		option_id: { $in: optionArr },
+	})
+	const sums = {};
+	surveyFuzzies.forEach(item => {
+			const { fuzzy_value, weight, field_id } = item;
+			const product = fuzzy_value * weight;
+			sums[field_id] = (sums[field_id] || 0) + product;
+	});
+	const sortedSums = Object.fromEntries(
+    Object.entries(sums).sort(([,a],[,b]) => b - a)
+	);
+	const ids = Object.entries(sortedSums).slice(0, 3).map(([key, value]) => key)
+	const matchedCareer = await CareerField.find({_id: { $in: ids }});
+	const bestMatched = matchedCareer[0];
+	const secondMatched = matchedCareer.slice(1, 3);
 
+	return {
+		bestMatched,
+		secondMatched,
+	};
+	// const coll = await CareerField.findById('65dee9c000b480478cbc56ad')
+	// coll.for_you_title = 'Nếu bạn có khả năng giải quyết vấn đề nhanh chóng, tinh thần hướng ngoại và kiến thức kỹ thuật đa dạng, thì lĩnh vực Hỗ trợ Kỹ thuật là sự lựa chọn phù hợp với bạn.',
+	// coll.description = 'Tập trung vào việc cung cấp hỗ trợ và giải quyết các vấn đề kỹ thuật liên quan đến sản phẩm và dịch vụ công nghệ. Các chuyên gia hỗ trợ kỹ thuật thường là người chịu trách nhiệm giải đáp các câu hỏi của khách hàng, xử lý các sự cố kỹ thuật và cung cấp giải pháp cho các vấn đề phát sinh.'
+	// await coll.save()
 }
 
 const createQuestions = async () => {

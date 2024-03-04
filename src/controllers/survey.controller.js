@@ -12,7 +12,19 @@ const createFuzzy = catchAsync(async (req, res) => {
   res.status(httpStatus.OK).send(fuzzies);
 });
 
+const getSurveyQuestions = catchAsync(async (req, res) => {
+  const result = await surveyService.getSurveyQuestions();
+  res.status(httpStatus.OK).send(result);
+});
+
+const generateResult = catchAsync(async (req, res) => {
+  const result = await surveyService.generateResult(req.body, req.user._id);
+  res.status(httpStatus.OK).send(result);
+});
+
 module.exports = {
   createQuestions,
-	createFuzzy
+	createFuzzy,
+	generateResult,
+	getSurveyQuestions,
 };

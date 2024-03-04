@@ -12,15 +12,17 @@ const userSurveyAnswerSchema = new Schema({
     question_id: {
       type: Schema.Types.ObjectId,
     },
-    option_id: {
-      type: Schema.Types.ObjectId,
-    }
+    option_id: [
+			{
+				type: Schema.Types.ObjectId,
+			}
+		]
   }]
 });
 
 userSurveyAnswerSchema.plugin(toJSON);
 userSurveyAnswerSchema.plugin(paginate);
 
-const UserSurveyAnswer = mongoose.model('UserSurveyAnswers', userSurveyAnswerSchema);
+const UserSurveyAnswer = mongoose.model('UserSurveyAnswers', userSurveyAnswerSchema, 'user_survey_answers');
 
 module.exports = UserSurveyAnswer;
