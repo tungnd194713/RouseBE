@@ -3,9 +3,22 @@ const { roadmapService } = require('../services');
 const catchAsync = require('../utils/catchAsync');
 const ApiError = require('../utils/ApiError');
 
+const suggestRoadmapAI = catchAsync(async (req, res) => {
+	try {
+		const roadmap = await roadmapService.suggestRoadmapAI();
+  	res.status(httpStatus.OK).send(roadmap);
+	} catch (e) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'Something wrong');
+	}
+})
+
 const fetchCategories = catchAsync(async (req, res) => {
-  const roadmap = await roadmapService.fetchCategories();
-  res.status(httpStatus.OK).send(roadmap);
+  try {
+		const roadmap = await roadmapService.fetchCategories();
+  	res.status(httpStatus.OK).send(roadmap);
+	} catch (e) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'Something wrong');
+	}
 });
 
 const fetchSpecCategories = catchAsync(async (req, res) => {
@@ -93,4 +106,5 @@ module.exports = {
   seedCategory,
   seedMilestones,
   seedRoadmap,
+	suggestRoadmapAI,
 };

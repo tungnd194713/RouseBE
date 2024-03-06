@@ -3,6 +3,29 @@ const httpStatus = require('http-status');
 const mongoose = require('mongoose');
 const ApiError = require('../utils/ApiError');
 const { RoadMap, Milestone, Category, SpecCategory, RoadmapTemplate, UserRoadMap, ModuleProgress } = require('../models');
+const { OpenAI} = require('openai');
+
+const openai = new OpenAI();
+
+const suggestRoadmapAI = async () => {
+	const milestones = await Milestone.find({});
+	const formattedMilestones = milestones.map(item => {
+		return {
+			id: item.id,
+			title: item.title
+		}
+	})
+	const jobTitle = 'Data Engineer'
+	const masteryLevel = 'Beginner'
+	const promt = `I have the following courses: ${JSON.stringify(formattedMilestones)}, please select from them and arrange them into a roadmap for ${jobTitle} with ${masteryLevel}, HTML skills is required. Returns data as an array of object including the id and title of the courses. Say no more than the result`
+	const completion = await openai.chat.completions.create({
+    messages: [{"role": "user", "content": promt}],
+    model: "gpt-3.5-turbo",
+  });
+
+  console.log(completion.choices[0]);
+	return JSON.parse(completion.choices[0].message.content);
+}
 
 async function findRoadmap(categoryId, subCategoryId, mastery) {
   const query = {};
@@ -498,4 +521,5 @@ module.exports = {
   seedMilestones,
   seedRoadmap,
   applyRoadmap,
+	suggestRoadmapAI,
 };

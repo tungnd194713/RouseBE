@@ -13,13 +13,21 @@ const createFuzzy = catchAsync(async (req, res) => {
 });
 
 const getSurveyQuestions = catchAsync(async (req, res) => {
-  const result = await surveyService.getSurveyQuestions();
-  res.status(httpStatus.OK).send(result);
+  try {
+		const result = await surveyService.getSurveyQuestions();
+  	res.status(httpStatus.OK).send(result);
+	} catch (e) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'Something wrong');
+	}
 });
 
 const generateResult = catchAsync(async (req, res) => {
-  const result = await surveyService.generateResult(req.body, req.user._id);
-  res.status(httpStatus.OK).send(result);
+  try {
+		const result = await surveyService.generateResult(req.body, req.user._id);
+  	res.status(httpStatus.OK).send(result);
+	} catch (e) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'Something wrong');
+	}
 });
 
 module.exports = {

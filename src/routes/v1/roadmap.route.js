@@ -16,5 +16,6 @@ router.post('/milestone/:milestone_id/complete', auth(), roadmapController.compl
 router.post('/seed-category', roadmapController.seedCategory);
 router.post('/seed-milestone', roadmapController.seedMilestones);
 router.post('/seed-roadmap', roadmapController.seedRoadmap);
+router.post('/test-gpt', roadmapController.suggestRoadmapAI);
 
 module.exports = router;
