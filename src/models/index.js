@@ -20,3 +20,5 @@ module.exports.SurveyOption = require('./surveyOption.model');
 module.exports.SurveyQuestion = require('./surveyQuestion.model');
 module.exports.UserSurveyAnswer = require('./userSurveyAnswer.model');
 module.exports.CareerField = require('./careerField.model');
+module.exports.Poll = require('./Poll.model');
+module.exports.PollOption = require('./PollOption.model');

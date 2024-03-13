@@ -1,5 +1,5 @@
 const httpStatus = require('http-status');
-const { surveyService } = require('../services');
+const { surveyService, pollService } = require('../services');
 const catchAsync = require('../utils/catchAsync');
 
 const createQuestions = catchAsync(async (req, res) => {
@@ -30,9 +30,39 @@ const generateResult = catchAsync(async (req, res) => {
 	}
 });
 
+const getPolllist = catchAsync(async (req, res) => {
+  try {
+		const result = await pollService.getPollList();
+  	res.status(httpStatus.OK).send(result);
+	} catch (e) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'Something wrong');
+	}
+});
+
+const getOptionUsers = catchAsync(async (req, res) => {
+  try {
+		const result = await pollService.getOptionUsers(req.params.option_id);
+  	res.status(httpStatus.OK).send(result);
+	} catch (e) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'Something wrong');
+	}
+});
+
+const vote = catchAsync(async (req, res) => {
+  try {
+		const result = await pollService.vote(req.params.option_id);
+  	res.status(httpStatus.OK).send(result);
+	} catch (e) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'Something wrong');
+	}
+});
+
 module.exports = {
   createQuestions,
 	createFuzzy,
 	generateResult,
 	getSurveyQuestions,
+	getPolllist,
+	getOptionUsers,
+	vote
 };
