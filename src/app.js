@@ -70,6 +70,6 @@ app.use(errorConverter);
 app.use(errorHandler);
 
 // body parser
-app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.urlencoded({ extended: true }));
 
 module.exports = app;

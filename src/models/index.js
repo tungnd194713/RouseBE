@@ -20,3 +20,6 @@ module.exports.SurveyOption = require('./surveyOption.model');
 module.exports.SurveyQuestion = require('./surveyQuestion.model');
 module.exports.UserSurveyAnswer = require('./userSurveyAnswer.model');
 module.exports.CareerField = require('./careerField.model');
+module.exports.Job = require('./job.model');
+module.exports.Company = require('./company.model');
+module.exports.CandidateApply = require('./candidateApply.model');

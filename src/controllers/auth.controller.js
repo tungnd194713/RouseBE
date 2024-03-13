@@ -15,6 +15,13 @@ const login = catchAsync(async (req, res) => {
   res.send({ user, tokens });
 });
 
+const companyLogin = catchAsync(async (req, res) => {
+  const { email, password } = req.body;
+  const company = await authService.loginCompanyWithEmailAndPassword(email, password);
+  const tokens = await tokenService.generateAuthTokens(company);
+  res.send({ user: company, tokens, access_token: tokens.access.token });
+});
+
 const logout = catchAsync(async (req, res) => {
   await authService.logout(req.body.refreshToken);
   res.status(httpStatus.NO_CONTENT).send();
@@ -56,4 +63,5 @@ module.exports = {
   resetPassword,
   sendVerificationEmail,
   verifyEmail,
+	companyLogin,
 };

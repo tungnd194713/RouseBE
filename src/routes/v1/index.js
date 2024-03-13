@@ -5,6 +5,7 @@ const docsRoute = require('./docs.route');
 const surveyRoute = require('./survey.route');
 const roadmapRoute = require('./roadmap.route');
 const courseRoute = require('./course.route');
+const companyRoute = require('./company.route');
 const config = require('../../config/config');
 
 const router = express.Router();
@@ -29,6 +30,10 @@ const defaultRoutes = [
 	{
     path: '/survey',
     route: surveyRoute,
+  },
+	{
+    path: '/companies',
+    route: companyRoute,
   },
 ];
 

@@ -1,6 +1,7 @@
 const httpStatus = require('http-status');
 const tokenService = require('./token.service');
 const userService = require('./user.service');
+const companyService = require('./company.service');
 const Token = require('../models/token.model');
 const ApiError = require('../utils/ApiError');
 const { tokenTypes } = require('../config/tokens');
@@ -17,6 +18,14 @@ const loginUserWithEmailAndPassword = async (email, password) => {
     throw new ApiError(httpStatus.UNAUTHORIZED, 'Incorrect email or password');
   }
   return user;
+};
+
+const loginCompanyWithEmailAndPassword = async (email, password) => {
+  const company = await companyService.getCompanyByEmail(email);
+  if (!company || !(await company.isPasswordMatch(password))) {
+    throw new ApiError(httpStatus.UNAUTHORIZED, 'Incorrect email or password');
+  }
+  return company;
 };
 
 /**
@@ -92,6 +101,7 @@ const verifyEmail = async (verifyEmailToken) => {
 
 module.exports = {
   loginUserWithEmailAndPassword,
+	loginCompanyWithEmailAndPassword,
   logout,
   refreshAuth,
   resetPassword,
