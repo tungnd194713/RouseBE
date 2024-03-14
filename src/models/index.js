@@ -23,3 +23,4 @@ module.exports.CareerField = require('./careerField.model');
 module.exports.Job = require('./job.model');
 module.exports.Company = require('./company.model');
 module.exports.CandidateApply = require('./candidateApply.model');
+module.exports.FieldRanking = require('./fieldRanking.model');
