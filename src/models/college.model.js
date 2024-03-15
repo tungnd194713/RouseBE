@@ -7,10 +7,14 @@ const collegeSchema = mongoose.Schema(
       type: mongoose.SchemaTypes.ObjectId,
       ref: 'CareerField',
     },
-    title: {
+    name: {
 			type: String,
 			required: true,
 		},
+		related_point: {
+			type: Number,
+			default: 1, // 0, 0.5, 1
+		}
   },
   {
     timestamps: true,
@@ -23,6 +27,6 @@ collegeSchema.plugin(toJSON);
 /**
  * @typedef Note
  */
-const College = mongoose.model('Note', collegeSchema);
+const College = mongoose.model('College', collegeSchema);
 
 module.exports = College;

@@ -15,6 +15,6 @@ router.post('/jobs/create', upload.none(), auth(), companyController.createJob);
 router.get('/jobs/', auth(), companyController.getJobs);
 router.get('/jobs/:id', auth(), companyController.getJobById);
 router.get('/candidate-applies/job/:id', auth(), companyController.getJobCandidateApplies);
-// router.post('/module/:module_id/discussion/:discussion_id/reply', courseController.updateModuleProgress);
+router.post('/seed-subject', companyController.seedSubject);
 
 module.exports = router;

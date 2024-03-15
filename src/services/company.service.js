@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const { Company, Job, CandidateApply } = require('../models');
+const { Company, Job, CandidateApply, Subject, College, Certificate, Major } = require('../models');
 
 const getCompanyJobs = async () => {
 	const companiesData = [
@@ -74,93 +74,140 @@ const getJobCandidateApplies = async (job_id) => {
 	return CandidateApply.find({job_id});
 }
 
-// [
-// 	"Agile",
-// 	"Android",
-// 	"Angular",
-// 	"AngularJS",
-// 	"ASP.NET",
-// 	"Assembly",
-// 	"Automation Test",
-// 	"AWS",
-// 	"Azure",
-// 	"Blockchain",
-// 	"Bridge Engineer",
-// 	"Business Analyst",
-// 	"C#",
-// 	"C++",
-// 	"C language",
-// 	"Cloud",
-// 	"COBOL",
-// 	"Cocos",
-// 	"CSS",
-// 	"Dart",
-// 	"Data Analyst",
-// 	"Database",
-// 	"Designer",
-// 	"DevOps",
-// 	"Django",
-// 	"Drupal",
-// 	"Embedded",
-// 	"English",
-// 	"ERP",
-// 	"Flutter",
-// 	"Games",
-// 	"Golang",
-// 	"Groovy",
-// 	"HTML5",
-// 	"iOS",
-// 	"IT Support",
-// 	"J2EE",
-// 	"Japanese",
-// 	"Java",
-// 	"JavaScript",
-// 	"JQuery",
-// 	"Kotlin",
-// 	"Laravel",
-// 	"Linux",
-// 	"Magento",
-// 	"Manager",
-// 	"MVC",
-// 	"MySQL",
-// 	".NET",
-// 	"Networking",
-// 	"NodeJS",
-// 	"NoSQL",
-// 	"Objective C",
-// 	"OOP",
-// 	"OpenStack",
-// 	"Oracle",
-// 	"PHP",
-// 	"PostgreSql",
-// 	"Product Manager",
-// 	"Project Manager",
-// 	"Python",
-// 	"QA QC",
-// 	"ReactJS",
-// 	"React Native",
-// 	"Ruby",
-// 	"Ruby on Rails",
-// 	"Salesforce",
-// 	"SAP",
-// 	"Scala",
-// 	"Scrum",
-// 	"Sharepoint",
-// 	"Software Architect",
-// 	"Solidity",
-// 	"Spring",
-// 	"SQL",
-// 	"Swift",
-// 	"System Admin",
-// 	"System Engineer",
-// 	"Team Leader",
-// 	"Tester",
-// 	"TypeScript",
-// 	"UI-UX",
-// 	"Unity",
-// 	"VueJS",
-// 	"Wordpress"
-// ]
+const seedSubject = async() => {
+	// const subjects = [
+	// 	"Cơ sở dữ liệu",
+	// 	"Mạng máy tính",
+	// 	"Hệ thống thông tin",
+	// 	"An toàn thông tin",
+	// 	"Công nghệ web",
+	// 	"AWS fundamental",
+	// 	"Cấu trúc dữ liệu và giải thuật",
+	// 	"Toán rời rạc",
+	// 	"Lập trình hướng đối tượng",
+	// 	"Kỹ thuật phần mềm",
+	// 	"Lập trình web",
+	// 	"Mạng internet",
+	// 	"Lập trình mạng",
+	// 	"Cisco network",
+	// 	"AWS developer",
+	// 	"Azure fundamental",
+	// 	"Agile",
+	// 	"AngularJS",
+	// 	"ASP.NET",
+	// 	"Assembly",
+	// 	"Automation Test",
+	// 	"C#",
+	// 	"C++",
+	// 	"C",
+	// 	"Cloud",
+	// 	"COBOL",
+	// 	"Cocos",
+	// 	"CSS",
+	// 	"Dart",
+	// 	"Django",
+	// 	"Drupal",
+	// 	"Embedded",
+	// 	"ERP",
+	// 	"Flutter",
+	// 	"Golang",
+	// 	"Groovy",
+	// 	"HTML5",
+	// 	"J2EE",
+	// 	"Java",
+	// 	"JavaScript",
+	// 	"JQuery",
+	// 	"Kotlin",
+	// 	"Laravel",
+	// 	"Linux",
+	// 	"Magento",
+	// 	"MVC",
+	// 	"MySQL",
+	// 	".NET",
+	// 	"NodeJS",
+	// 	"NoSQL",
+	// 	"Objective C",
+	// 	"OOP",
+	// 	"OpenStack",
+	// 	"Oracle",
+	// 	"PHP",
+	// 	"PostgreSql",
+	// 	"Python",
+	// 	"ReactJS",
+	// 	"React Native",
+	// 	"Ruby",
+	// 	"Ruby on Rails",
+	// 	"Salesforce",
+	// 	"SAP",
+	// 	"Scala",
+	// 	"Scrum",
+	// 	"Solidity",
+	// 	"Spring",
+	// 	"SQL",
+	// 	"Swift",
+	// 	"Integrated Test",
+	// 	"Unit Test",
+	// 	"TypeScript",
+	// 	"UI-UX",
+	// 	"Unity",
+	// 	"VueJS",
+	// 	"Wordpress"
+	// ];
+
+	// const data = subjects.map((item) => {
+	// 	return {
+	// 		name: item,
+	// 	}
+	// })
+
+	// const certificates = [
+	// 	'IT Passport (IP)',
+	// 	'Fundamental IT Engineering (FE)',
+	// 	'AWS Certificated Clound Practitioner - Associate',
+	// 	'AWS Certificated Developer - Associate',
+	// 	'AWS Certificated SysOps Administrator - Associate',
+	// 	'AWS Certificated Solutions Architect - Associate',
+	// 	'AWS Certificated Solutions Architect - Professional',
+	// 	'AWS Certificated DevOps Engineer Engineer - Professional',
+	// 	'AWS Certificated Advanced Networking - Professional',
+	// 	'AWS Certificated Database - Specialty',
+	// 	'Azure Fundamentals (AZ-900)',
+	// 	'Azure Security Engineer Associate (AZ-500)',
+	// 	'Azure Database Administrator Associate (DP-300)',
+	// 	'Oracle Database SQL Associate (OCA)',
+	// 	'Oracle Database SQL Professional (OCP)',
+	// 	'Cisco Certified Network Associate (CCNA)',
+	// 	'Cisco Certified Network Professional (CCNP)',
+	// 	'Certified Network Defender (CND)',
+	// 	'LPIC-1 Certified Linux Administrator',
+	// 	'LPIC-2 Certified Linux Administrator',
+	// ]
+
+	// const data = certificates.map((item) => {
+	// 	return {
+	// 		name: item,
+	// 	}
+	// })
+
+	// return Certificate.insertMany(data);
+
+	const majors = [
+		'Công nghệ thông tin',
+		'Hệ thống thông tin',
+		'An toàn thông tin',
+		'Kỹ thuật phần mềm',
+		'Kỹ thuật máy tính',
+		'Khoa học máy tính',
+	]
+
+	const data = majors.map((item) => {
+		return {
+			name: item,
+		}
+	})
+
+	return Major.insertMany(data);
+}
 
 module.exports = {
 	getCompanyByEmail,
@@ -170,4 +217,5 @@ module.exports = {
 	getJobs,
 	getJobById,
 	getJobCandidateApplies,
+	seedSubject,
 }

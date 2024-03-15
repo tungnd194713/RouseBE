@@ -1,13 +1,13 @@
 const mongoose = require('mongoose');
 const { toJSON } = require('./plugins');
 
-const certificateSchema = mongoose.Schema(
+const jobTitleSchema = mongoose.Schema(
   {
     field: {
       type: mongoose.SchemaTypes.ObjectId,
       ref: 'CareerField',
     },
-    name: {
+    title: {
 			type: String,
 			required: true,
 		},
@@ -18,11 +18,11 @@ const certificateSchema = mongoose.Schema(
 );
 
 // add plugin that converts mongoose to json
-certificateSchema.plugin(toJSON);
+jobTitleSchema.plugin(toJSON);
 
 /**
  * @typedef Note
  */
-const Certificate = mongoose.model('Certificate', certificateSchema);
+const JobTitle = mongoose.model('JobTitle', jobTitleSchema, 'job_title');
 
-module.exports = Certificate;
+module.exports = JobTitle;

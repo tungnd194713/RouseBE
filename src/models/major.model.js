@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const { toJSON } = require('./plugins');
 
-const subjectSchema = mongoose.Schema(
+const majorSchema = mongoose.Schema(
   {
     name: {
 			type: String,
@@ -14,11 +14,11 @@ const subjectSchema = mongoose.Schema(
 );
 
 // add plugin that converts mongoose to json
-subjectSchema.plugin(toJSON);
+majorSchema.plugin(toJSON);
 
 /**
  * @typedef Note
  */
-const Subject = mongoose.model('Subject', subjectSchema);
+const Major = mongoose.model('Major', majorSchema);
 
-module.exports = Subject;
+module.exports = Major;
