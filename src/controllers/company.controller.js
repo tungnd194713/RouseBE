@@ -32,6 +32,11 @@ const getJobCandidateApplies = catchAsync(async (req, res) => {
   res.status(httpStatus.OK).send(candidates);
 });
 
+const getRequirementOptions = catchAsync(async (req, res) => {
+	const data = await companyService.getRequirementOptions();
+	res.status(httpStatus.OK).send(data);
+})
+
 const seedSubject = catchAsync(async (req, res) => {
   const jobs = await companyService.seedSubject();
   res.status(httpStatus.OK).send(jobs);
@@ -45,4 +50,5 @@ module.exports = {
 	getJobById,
 	getJobCandidateApplies,
 	seedSubject,
+	getRequirementOptions,
 }

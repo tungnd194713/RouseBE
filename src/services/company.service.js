@@ -209,6 +209,20 @@ const seedSubject = async() => {
 	return Major.insertMany(data);
 }
 
+const getRequirementOptions = async () => {
+	const skills = await Subject.find({});
+	const certificates = await Certificate.find({});
+	const majors = await Major.find({});
+	const colleges = await College.find({});
+
+	return {
+		skills,
+		certificates,
+		majors,
+		colleges,
+	}
+}
+
 module.exports = {
 	getCompanyByEmail,
 	getCompanyJobs,
@@ -218,4 +232,5 @@ module.exports = {
 	getJobById,
 	getJobCandidateApplies,
 	seedSubject,
+	getRequirementOptions,
 }

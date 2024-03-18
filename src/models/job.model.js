@@ -15,11 +15,6 @@ const jobSchema = new mongoose.Schema({
   //   type: String,
   //   required: true,
   // },
-  form_recruitment: {
-    type: Number,
-    required: true,
-    enum: [1, 2, 3, 4, 5],
-  },
   date_start: {
     type: Date,
     required: true,
@@ -34,10 +29,6 @@ const jobSchema = new mongoose.Schema({
   },
   number_recruitments: {
     type: Number,
-    required: true,
-  },
-  status_stay: {
-    type: String,
     required: true,
   },
   salary_min: {
@@ -61,10 +52,8 @@ const jobSchema = new mongoose.Schema({
   career: Number,
   address_work: String,
   time_work: String,
-  holidays: String,
   welfare_regime: String,
   overtime: String,
-  break_time: String,
   // type_plan: {
   //   type: Number,
   //   required: true,
@@ -100,18 +89,6 @@ const jobSchema = new mongoose.Schema({
   hour_work: {
     type: Number,
   },
-  number_work_day_min: {
-    type: Number,
-  },
-  number_work_day_max: {
-    type: Number,
-  },
-  overtime_min: Number,
-  overtime_max: Number,
-  holiday_min: Number,
-  holiday_max: Number,
-  night_work_min: Number,
-  night_work_max: Number,
   overtime_coefficients: {
     type: Number,
   },
