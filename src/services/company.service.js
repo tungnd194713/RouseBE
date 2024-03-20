@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const { Company, Job, CandidateApply, Subject, College, Certificate, Major } = require('../models');
+const { Company, Job, CandidateApply, Subject, College, Certificate, Major, CertificateSubjects, CollegeSubjects } = require('../models');
 
 const getCompanyJobs = async () => {
 	const companiesData = [
@@ -72,6 +72,30 @@ const getJobById = async (id) => {
 
 const getJobCandidateApplies = async (job_id) => {
 	return CandidateApply.find({job_id});
+}
+
+const mainSuggestionLogic = async (beginnerSkills, intermediateSkills, advancedSkills, certificates, collegeMajors) => {
+	const certificateObjects = await CertificateSubjects.find({
+		certificates: { $in: certificates },
+	})
+	const certificateSubjectObjects = certificateObjects.map(item => item.subject_objects);
+	const certificateSubjects = certificateObjects.map(item => item.subject);
+
+	const majorObjects = await CollegeSubjects.find({
+		colleges: { $in: collegeMajors.map(item => item.college) },
+		major: { $in: collegeMajors.map(item => item.major) },
+	})
+
+	const majorSubjectObjects = majorObjects.map(item => item.subject_objects);
+	const majorSubjects = majorSubjectObjects.map(item => item.subject);
+
+	const skillIds = beginnerSkills.map(item => item.id).concat(intermediateSkills.map(item => item.id), advancedSkills.map(item => item.id), certificateSubjects, majorSubjects);
+	const requirements = JobRequirement.find({
+		skills: { $in: skillIds }
+	})
+	const allJobIds = requirements.map(item => item.job);
+	const allJobs = Job.find({_id: { $in: allJobIds }});
+	// For each to handle
 }
 
 const seedSubject = async() => {
