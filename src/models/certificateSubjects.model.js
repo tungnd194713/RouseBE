@@ -13,11 +13,9 @@ const certificateSubjectsSchema = mongoose.Schema(
 				ref: 'Subject'
 			},
 			level: {
-				level: {
-					type: String,
-					default: 'Beginner',
-					enum: ['Beginner', 'Intermediate', 'Advanced'],
-				}
+				type: String,
+				default: 'Beginner',
+				enum: ['Beginner', 'Intermediate', 'Advanced'],
 			}
 		}],
   },

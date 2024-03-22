@@ -7,3 +7,4 @@ module.exports.moduleService = require('./module.service');
 module.exports.roadmapService = require('./roadmap.service');
 module.exports.surveyService = require('./survey.service');
 module.exports.companyService = require('./company.service');
+module.exports.subjectService = require('./subject.service');
