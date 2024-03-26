@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const { Company, Job, CandidateApply, Subject, College, Certificate, Major, CertificateSubjects, CollegeSubjects } = require('../models');
+const JobRequirement = require('../models/jobRequirement.model');
 
 const getCompanyJobs = async () => {
 	const companiesData = [
@@ -43,11 +44,80 @@ const getCompanyById = async (id) => {
 
 const createJob = async (company_id, data) => {
 	const slug = data.title;
-	return Job.create({
+
+  const job = await Job.create({
 		...data,
 		company_id,
 		slug,
 	});
+
+  if (job) {
+    const beginnerSkills = JSON.parse(data.beginnerSkills);
+    const intermediateSkills = JSON.parse(data.intermediateSkills);
+    const advancedSkills = JSON.parse(data.advancedSkills);
+    const certificates = JSON.parse(data.certificates);
+    const collegeMajors = JSON.parse(data.collegeMajors);
+
+    const beginnerData = beginnerSkills.map(subArray => {
+      const ids = subArray.map(obj => obj.id);
+      return {
+        job: job.id,
+        company: company_id,
+        skills: ids,
+        level: 'Beginner',
+        type: 'Skill',
+      }
+    });
+    const intermediateData = intermediateSkills.map(subArray => {
+      const ids = subArray.map(obj => obj.id);
+      return {
+        job: job.id,
+        company: company_id,
+        skills: ids,
+        level: 'Intermediate',
+        type: 'Skill',
+      }
+    });
+    const advancedData = advancedSkills.map(subArray => {
+      const ids = subArray.map(obj => obj.id);
+      return {
+        job: job.id,
+        company: company_id,
+        skills: ids,
+        level: 'Advanced',
+        type: 'Skill',
+      }
+    });
+    const certificateData = certificates.map(subArray => {
+      const ids = subArray.map(obj => obj.id);
+      return {
+        job: job.id,
+        company: company_id,
+        certificates: ids,
+        type: 'Certificate',
+      }
+    });
+    const collegeMajorData = collegeMajors.map(subArray => {
+      const majors = subArray.majors.map(obj => obj.id);
+      const colleges = subArray.colleges.map(obj => obj.id);
+      return {
+        job: job.id,
+        company: company_id,
+        majors,
+        colleges,
+        type: 'Major',
+      }
+    });
+
+    const requirementData = beginnerData.concat(intermediateData, advancedData, certificateData, collegeMajorData);
+    const requirements = await JobRequirement.insertMany(requirementData);
+    return {
+      job,
+      requirements,
+    }
+  } else {
+    throw new Error('Something wrong');
+  }
 }
 
 const getJobs = async (company_id, params) => {
@@ -65,9 +135,52 @@ const getJobs = async (company_id, params) => {
 
 const getJobById = async (id) => {
 	const job = await Job.findById(id);
+  const requirements = await JobRequirement.find({job: job.id}).populate('skills certificates majors colleges');
+  const beginnerSkills = requirements.filter(item => item.type === 'Skill' && item.level === 'Beginner').map(obj => obj.skills);
+  const intermediateSkills = requirements.filter(item => item.type === 'Skill' && item.level === 'Intermediate').map(obj => obj.skills);
+  const advancedSkills = requirements.filter(item => item.type === 'Skill' && item.level === 'Advanced').map(obj => obj.skills);
+  const certificates = requirements.filter(item => item.type === 'Certificate').map(obj => obj.certificates);
+  const majorColleges = requirements.filter(item => item.type === 'Major').map(obj => {
+    return {
+      majors: obj.majors,
+      colleges: obj.colleges
+    }
+  });
+  const previewSkills = requirements.filter(item => item.type === 'Skill').map(obj => obj.skills);
+
 	return {
 		job,
+    beginnerSkills,
+    intermediateSkills,
+    advancedSkills,
+    certificates,
+    majorColleges,
+    previewSkills,
 	}
+}
+
+const deleteJob = async (job_id) => {
+  const hasCandidateApply = await CandidateApply.countDocuments({job_id});
+  if (hasCandidateApply && hasCandidateApply > 0) {
+    return false;
+  } else {
+    await Job.deleteOne({_id: job_id})
+    await JobRequirement.deleteMany({job: job_id})
+    return true;
+  }
+}
+
+const getCandidateApplies = async (params) => {
+	const candidates = await CandidateApply.find({});
+  const total = await Job.countDocuments({});
+	return {
+		data: candidates,
+		meta: {
+			total,
+			current_page: 1,
+			per_page: 10,
+		}
+	};
 }
 
 const getJobCandidateApplies = async (job_id) => {
@@ -254,7 +367,9 @@ module.exports = {
 	createJob,
 	getJobs,
 	getJobById,
+  getCandidateApplies,
 	getJobCandidateApplies,
 	seedSubject,
 	getRequirementOptions,
+  deleteJob,
 }

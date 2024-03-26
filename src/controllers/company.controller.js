@@ -32,6 +32,20 @@ const getJobCandidateApplies = catchAsync(async (req, res) => {
   res.status(httpStatus.OK).send(candidates);
 });
 
+const deleteJob = catchAsync(async (req, res) => {
+  const isDeleted = await companyService.deleteJob(req.params.id);
+  if (!isDeleted) {
+    res.status(httpStatus.NOT_ACCEPTABLE).send('Candidates existing');
+  } else {
+    res.status(httpStatus.OK).send('Deleted');
+  }
+});
+
+const getCandidateApplies = catchAsync(async (req, res) => {
+	const data = await companyService.getCandidateApplies(req.query);
+	res.status(httpStatus.OK).send(data);
+})
+
 const getRequirementOptions = catchAsync(async (req, res) => {
 	const data = await companyService.getRequirementOptions();
 	res.status(httpStatus.OK).send(data);
@@ -51,4 +65,6 @@ module.exports = {
 	getJobCandidateApplies,
 	seedSubject,
 	getRequirementOptions,
+  deleteJob,
+  getCandidateApplies,
 }
