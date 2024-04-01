@@ -1,6 +1,44 @@
 const mongoose = require('mongoose');
-const { Company, Job, CandidateApply, Subject, College, Certificate, Major, CertificateSubjects, CollegeSubjects } = require('../models');
+const { Company, Job, CandidateApply, Subject, College, Certificate, Major, CertificateSubjects, CollegeSubjects, JobEducation, UserProfile } = require('../models');
 const JobRequirement = require('../models/jobRequirement.model');
+
+function formatDate(dateString) {
+	const date = new Date(dateString);
+	const year = date.getFullYear();
+	const month = String(date.getMonth() + 1).padStart(2, '0');
+	const day = String(date.getDate()).padStart(2, '0');
+	return `${year}-${month}-${day}`;
+}
+
+function addMonthsToDate(inputDate, monthsToAdd) {
+	const newDate = new Date(inputDate);
+
+	// Adding the specified number of months
+	newDate.setMonth(newDate.getMonth() + monthsToAdd);
+
+	// Format the date as YYYY-MM-DD
+	const formattedDate = `${newDate.getFullYear()}-${String(newDate.getMonth() + 1).padStart(2, '0')}-${String(newDate.getDate()).padStart(2, '0')}`;
+
+	return formattedDate;
+}
+
+function skillLevelCompare(requirementLevel, profileLevel) {
+	if (requirementLevel == 'Advanced') {
+		if (profileLevel == 'Advanced') return 1;
+		if (profileLevel == 'Intermediate') return 0.5;
+		if (profileLevel == 'Beginner') return 0;
+	}
+	if (requirementLevel == 'Intermediate') {
+		if (profileLevel == 'Advanced') return 1;
+		if (profileLevel == 'Intermediate') return 1;
+		if (profileLevel == 'Beginner') return 0.5;
+	}
+	if (requirementLevel == 'Beginner') {
+		if (profileLevel == 'Advanced') return 1;
+		if (profileLevel == 'Intermediate') return 1;
+		if (profileLevel == 'Beginner') return 1;
+	}
+}
 
 const getCompanyJobs = async () => {
 	const companiesData = [
@@ -52,6 +90,15 @@ const createJob = async (company_id, data) => {
 	});
 
   if (job) {
+		if (data.accept_education) {
+			await JobEducation.create({
+				company: company_id,
+				job: job.id,
+				max_education_month,
+				scholarship,
+			})
+		}
+
     const beginnerSkills = JSON.parse(data.beginnerSkills);
     const intermediateSkills = JSON.parse(data.intermediateSkills);
     const advancedSkills = JSON.parse(data.advancedSkills);
@@ -121,8 +168,20 @@ const createJob = async (company_id, data) => {
 }
 
 const getJobs = async (company_id, params) => {
-	const jobs = await Job.find({});
+	let jobs = await Job.find({company_id});
+	const jobEducations = await JobEducation.find({company: company_id});
 	const total = await Job.countDocuments({});
+	jobs = jobs.map(job => {
+		const education = jobEducations.find(edu => edu.job_id === job._id);
+		return {
+				...job.toObject(), // Convert Mongoose document to plain JavaScript object
+				date_start: job.date_start ? formatDate(job.date_start) : null,
+				date_end: job.date_start ? addMonthsToDate(job.date_start, job.display_month) : null,
+				max_education_month: education ? education.max_education_month : null,
+				scholarship: education ? education.scholarship : null,
+				id: job._id,
+		};
+	});
 	return {
 		data: jobs,
 		meta: {

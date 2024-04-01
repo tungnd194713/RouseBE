@@ -109,6 +109,10 @@ const jobSchema = new mongoose.Schema({
 		type: mongoose.Schema.Types.ObjectId,
 		ref: 'CandidateApply',
 	}],
+  accept_education: {
+		type: Boolean,
+		default: false,
+	},
   deleted_at: Date,
 }, {
   timestamps: true,

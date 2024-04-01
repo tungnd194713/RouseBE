@@ -23,6 +23,7 @@ router.get('/profile/', auth(), userController.getUserProfile);
 router.get('/profile/user-options', auth(), userController.getUserOptions);
 router.get('/me', auth(), userController.getUser);
 router.post('/profile/update-info-advanced', upload.none(), auth(), userController.updateUserProfile);
+router.get('/jobs/:jobId/matching-point', auth(), userController.getJobMatchingPoint);
 
 module.exports = router;
 

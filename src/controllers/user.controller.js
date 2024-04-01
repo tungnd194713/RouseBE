@@ -49,6 +49,11 @@ const getUserOptions = catchAsync(async (req, res) => {
   res.status(httpStatus.OK).send(data);
 });
 
+const getJobMatchingPoint = catchAsync(async (req, res) => {
+  const data = await userService.jobMatchingPoint(req.user._id, req.params.jobId);
+  res.status(httpStatus.OK).send(data);
+});
+
 module.exports = {
   createUser,
   getUsers,
@@ -58,4 +63,5 @@ module.exports = {
   getUserProfile,
   getUserOptions,
   updateUserProfile,
+	getJobMatchingPoint,
 };

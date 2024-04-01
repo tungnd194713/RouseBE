@@ -1,6 +1,7 @@
 const httpStatus = require('http-status');
 const { User, UserProfile } = require('../models');
 const ApiError = require('../utils/ApiError');
+const JobRequirement = require('../models/jobRequirement.model');
 
 /**
  * Create a user
@@ -142,6 +143,48 @@ const updateUserProfile = async (userId, body) => {
   await profile.save();
 }
 
+const jobMatchingPoint = async (user_id, job_id) => {
+	const profile = await UserProfile.findOne({user: user_id});
+	const jobRequirement = await JobRequirement.find({job: job_id});
+
+	let userPoint = 0;
+	let jobPoint = jobRequirement.length;
+	if (jobPoint > 0) {
+		jobRequirement.forEach((requirement) => {
+			if (requirement.skills && requirement.skills.length > 0) {
+				profile.skills.forEach((userSkill) => {
+					if (requirement.skills.include(userSkill.skill)) {
+						userPoint += skillLevelCompare(requirement.level, userSkill.level);
+					}
+				})
+			}
+			else if (requirement.certificates && requirement.certificates.length > 0) {
+				profile.certificates.forEach((userCertificate) => {
+					if (requirement.certificates.include(userCertificate.certificate)) {
+						userPoint += 1;
+					}
+				})
+			}
+			else if (requirement.major && requirement.major.length > 0) {
+				profile.majors.forEach((userMajor) => {
+					if (requirement.majors.include(userMajor.major)) {
+						userPoint += 1;
+					}
+				})
+			}
+			else if (requirement.college && requirement.college.length > 0) {
+				profile.colleges.forEach((userCollege) => {
+					if (requirement.colleges.include(userCollege.college)) {
+						userPoint += 1;
+					}
+				})
+			}
+		})
+	}
+
+	return userPoint;
+}
+
 module.exports = {
   createUser,
   queryUsers,
@@ -151,4 +194,5 @@ module.exports = {
   deleteUserById,
   getUserProfile,
   updateUserProfile,
+	jobMatchingPoint,
 };
