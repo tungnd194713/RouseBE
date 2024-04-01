@@ -30,3 +30,4 @@ module.exports.College = require('./college.model');
 module.exports.CollegeSubjects = require('./collegeSubjects.model');
 module.exports.JobTitle = require('./jobTitle.model');
 module.exports.Major = require('./major.model');
+module.exports.UserProfile = require('./userProfile.model');

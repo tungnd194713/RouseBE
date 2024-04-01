@@ -12,7 +12,11 @@ const login = catchAsync(async (req, res) => {
   const { email, password } = req.body;
   const user = await authService.loginUserWithEmailAndPassword(email, password);
   const tokens = await tokenService.generateAuthTokens(user);
-  res.send({ user, tokens });
+  const access_token = tokens.access.token;
+  const refresh_token = tokens.refresh.token;
+  const expires_in = 2592000;
+  const token_type = 'bearer';
+  res.send({ user, tokens, access_token, refresh_token, expires_in, token_type });
 });
 
 const companyLogin = catchAsync(async (req, res) => {
