@@ -16,14 +16,15 @@ router
 router
   .route('/:userId')
   // .get(auth('getUsers'), validate(userValidation.getUser), userController.getUser)
-  .patch(auth('manageUsers'), validate(userValidation.updateUser), userController.updateUser)
   .delete(auth('manageUsers'), validate(userValidation.deleteUser), userController.deleteUser);
 
 router.get('/profile/', auth(), userController.getUserProfile);
 router.get('/profile/user-options', auth(), userController.getUserOptions);
 router.get('/me', auth(), userController.getUser);
+router.post('/profile/update-info-basic', upload.none(), auth(), userController.updateUser);
 router.post('/profile/update-info-advanced', upload.none(), auth(), userController.updateUserProfile);
 router.get('/jobs/:jobId/matching-point', auth(), userController.getJobMatchingPoint);
+router.post('/jobs/find', auth(), userController.findJob);
 
 module.exports = router;
 

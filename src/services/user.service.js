@@ -1,7 +1,27 @@
 const httpStatus = require('http-status');
-const { User, UserProfile } = require('../models');
+const { User, UserProfile, Job, JobEducation } = require('../models');
 const ApiError = require('../utils/ApiError');
 const JobRequirement = require('../models/jobRequirement.model');
+
+function formatDate(dateString) {
+	const date = new Date(dateString);
+	const year = date.getFullYear();
+	const month = String(date.getMonth() + 1).padStart(2, '0');
+	const day = String(date.getDate()).padStart(2, '0');
+	return `${year}-${month}-${day}`;
+}
+
+function addMonthsToDate(inputDate, monthsToAdd) {
+	const newDate = new Date(inputDate);
+
+	// Adding the specified number of months
+	newDate.setMonth(newDate.getMonth() + monthsToAdd);
+
+	// Format the date as YYYY-MM-DD
+	const formattedDate = `${newDate.getFullYear()}-${String(newDate.getMonth() + 1).padStart(2, '0')}-${String(newDate.getDate()).padStart(2, '0')}`;
+
+	return formattedDate;
+}
 
 /**
  * Create a user
@@ -141,6 +161,40 @@ const updateUserProfile = async (userId, body) => {
   profile.introduction = body?.strength;
 
   await profile.save();
+  return {candidate: {...user.toObject(), ...profile.toObject()}}
+}
+
+const findJob = async (body, query) => {
+  let jobData = await Job.paginate({}, query);
+  let jobs = jobData.results;
+  let jobIds = jobs.map(item => item.id);
+  if (!jobIds.length) jobIds = jobs.map(item => item._id);
+  const jobRequirements = await JobRequirement.find({job: { $in: jobIds }}).populate('skills certificates majors colleges');
+  const educations = await JobEducation.find({job: { $in: jobIds }});
+  jobs = jobs.map(job => {
+		const education = educations.find(edu => edu.job.toString() == job._id.toString());
+		const requirements = jobRequirements.filter(re => re.job.toString() == job._id.toString());
+    const previewSkills = requirements.filter(item => item.type === 'Skill').map(obj => obj.skills);
+
+		return {
+				...job.toObject(), // Convert Mongoose document to plain JavaScript object
+				date_start: job.date_start ? formatDate(job.date_start) : null,
+				date_end: job.date_start ? addMonthsToDate(job.date_start, job.display_month) : null,
+				max_education_month: education ? education.max_education_month : null,
+				scholarship: education ? education.scholarship : null,
+				id: job._id,
+        requirements,
+        previewSkills,
+		};
+	});
+  return {
+		data: jobs,
+		meta: {
+			total: jobs.length,
+			current_page: 1,
+			per_page: 10,
+		}
+	};
 }
 
 const jobMatchingPoint = async (user_id, job_id) => {
@@ -182,7 +236,7 @@ const jobMatchingPoint = async (user_id, job_id) => {
 		})
 	}
 
-	return userPoint;
+	return userPoint / jobPoint;
 }
 
 module.exports = {
@@ -195,4 +249,5 @@ module.exports = {
   getUserProfile,
   updateUserProfile,
 	jobMatchingPoint,
+  findJob,
 };

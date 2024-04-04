@@ -28,8 +28,33 @@ const addCertificate = catchAsync(async (req, res) => {
   res.status(httpStatus.OK).send(result);
 });
 
+const getMajors = catchAsync(async (req, res) => {
+  const result = await subjectService.getMajors(req.query);
+  res.status(httpStatus.OK).send(result);
+});
+
+const getMajorSubject = catchAsync(async (req, res) => {
+  const result = await subjectService.getMajorSubject(req.params.id, req.query.page, req.query.per_page, req.query.collegeId);
+  res.status(httpStatus.OK).send(result);
+});
+
+const addSubjectToMajor = catchAsync(async (req, res) => {
+  const result = await subjectService.addSubjectToMajor(req.params.id, req.body, req.query.collegeId);
+  res.status(httpStatus.OK).send(result);
+});
+
+const deleteSubjectFromMajor = catchAsync(async (req, res) => {
+  const result = await subjectService.deleteSubjectFromMajor(req.params.id, req.params.subject_id, req.query.collegeId);
+  res.status(httpStatus.OK).send(result);
+});
+
 const getAllSubject = catchAsync(async (req, res) => {
   const result = await subjectService.getAllSubject(req.body);
+  res.status(httpStatus.OK).send(result);
+});
+
+const addMajor = catchAsync(async (req, res) => {
+  const result = await subjectService.addMajor(req.body);
   res.status(httpStatus.OK).send(result);
 });
 
@@ -40,4 +65,9 @@ module.exports = {
 	deleteSubjectFromCertificate,
 	addCertificate,
 	getAllSubject,
+  getMajors,
+  getMajorSubject,
+  addSubjectToMajor,
+  deleteSubjectFromMajor,
+  addMajor,
 };

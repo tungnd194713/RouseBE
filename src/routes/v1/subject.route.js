@@ -9,6 +9,11 @@ router.get('/certificates/:id/subjects', auth(), subjectController.getCertificat
 router.post('/certificates/:id/subjects', auth(), subjectController.addSubjectToCertificate);
 router.delete('/certificates/:id/subjects/:subject_id', auth(), subjectController.deleteSubjectFromCertificate);
 router.post('/certificates', auth(), subjectController.addCertificate);
+router.get('/majors', auth(), subjectController.getMajors);
+router.get('/majors/:id/subjects', auth(), subjectController.getMajorSubject);
+router.post('/majors/:id/subjects', auth(), subjectController.addSubjectToMajor);
+router.delete('/majors/:id/subjects/:subject_id', auth(), subjectController.deleteSubjectFromMajor);
+router.post('/majors', auth(), subjectController.addMajor);
 router.post('/subjects', auth(), subjectController.getAllSubject);
 
 module.exports = router;

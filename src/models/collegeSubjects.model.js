@@ -6,23 +6,23 @@ const collegeSubjectsSchema = mongoose.Schema(
     college: {
       type: mongoose.SchemaTypes.ObjectId,
       ref: 'College',
+      default: mongoose.Types.ObjectId('000000000000'),
     },
 		major: {
 			type: mongoose.SchemaTypes.ObjectId,
       ref: 'Major',
+      required: true,
 		},
     subject_objects: [{
 			subject: {
 				type: mongoose.SchemaTypes.ObjectId,
 				ref: 'Subject'
 			},
-			level: {
-				level: {
-					type: String,
-					default: 'Beginner',
-					enum: ['Beginner', 'Intermediate', 'Advanced'],
-				}
-			}
+      level: {
+        type: String,
+        default: 'Beginner',
+        enum: ['Beginner', 'Intermediate', 'Advanced'],
+      }
 		}],
   },
   {

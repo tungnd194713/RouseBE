@@ -33,7 +33,7 @@ const userProfileSchema = new Schema({
     is_custom_certificate: { type: Boolean },
   }],
   working_experiences: [{
-    company_name: { type: String },
+    name: { type: String },
     start_at: { type: Date },
     end_at: { type: Date },
     status: {

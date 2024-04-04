@@ -94,8 +94,8 @@ const createJob = async (company_id, data) => {
 			await JobEducation.create({
 				company: company_id,
 				job: job.id,
-				max_education_month,
-				scholarship,
+				max_education_month: data.max_education_month,
+				scholarship: data.scholarship,
 			})
 		}
 
@@ -172,7 +172,7 @@ const getJobs = async (company_id, params) => {
 	const jobEducations = await JobEducation.find({company: company_id});
 	const total = await Job.countDocuments({});
 	jobs = jobs.map(job => {
-		const education = jobEducations.find(edu => edu.job_id === job._id);
+		const education = jobEducations.find(edu => edu.job.toString() === job._id.toString());
 		return {
 				...job.toObject(), // Convert Mongoose document to plain JavaScript object
 				date_start: job.date_start ? formatDate(job.date_start) : null,
@@ -193,7 +193,15 @@ const getJobs = async (company_id, params) => {
 }
 
 const getJobById = async (id) => {
-	const job = await Job.findById(id);
+	let job = await Job.findById(id);
+  const education = await JobEducation.findOne({job: job.id});
+  job = {
+    ...job.toObject(),
+    max_education_month: education ? education.max_education_month : null,
+    scholarship: education ? education.scholarship : null,
+    id: job._id,
+    date_end: job.date_start ? addMonthsToDate(job.date_start, job.display_month) : null,
+  }
   const requirements = await JobRequirement.find({job: job.id}).populate('skills certificates majors colleges');
   const beginnerSkills = requirements.filter(item => item.type === 'Skill' && item.level === 'Beginner').map(obj => obj.skills);
   const intermediateSkills = requirements.filter(item => item.type === 'Skill' && item.level === 'Intermediate').map(obj => obj.skills);
