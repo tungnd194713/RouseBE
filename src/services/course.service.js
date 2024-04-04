@@ -1,6 +1,7 @@
 // const httpStatus = require('http-status');
 const mongoose = require('mongoose');
-const { ModuleProgress, User, Module } = require('../models');
+const { ModuleProgress, User, Module, Course } = require('../models');
+const ApiError = require('../utils/ApiError');
 
 // eslint-disable-next-line camelcase
 const getCourse = async (_id, user_id) => {
@@ -94,8 +95,56 @@ const updateModuleProgress = async (moduleId, updateBody) => {
   return result;
 };
 
+/**
+ * Query for users
+ * @param {Object} filter - Mongo filter (body)
+ * @param {Object} options - Query options (query)
+ * @param {string} [options.sortBy] - Sort option in the format: sortField:(desc|asc)
+ * @param {number} [options.limit] - Maximum number of results per page (default = 10)
+ * @param {number} [options.page] - Current page (default = 1)
+ * @returns {Promise<QueryResult>}
+ */
+const getCourses = async (filter, options) => {
+	return Course.paginate(filter, options);
+}
+
+const createCourse = async (body) => {
+	const data = {
+		...body,
+		skill_tags: JSON.parse(body.tags),
+	}
+
+	return Course.create(data);
+}
+
+const addModuleToCourse = async (courseId, body) => {
+	try {
+		const course = await Course.findById(courseId);
+		if (!course) {
+			throw new ApiError(httpStatus.NOT_FOUND, 'Course not found');
+		}
+		const module = await Module.create(body);
+		if (!module) {
+			throw new ApiError(httpStatus.NOT_FOUND, 'Module not found');
+		}
+		await Course.findByIdAndUpdate(
+			courseId,
+			{ $push: { modules: module._id } },
+		);
+		return module; // return the added module if needed
+	} catch (error) {
+		if (error instanceof mongoose.Error) {
+			throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, error.message);
+		}
+		throw error;
+	}
+}
+
 module.exports = {
   getCourse,
   updateModuleProgress,
   getUserCourse,
+	createCourse,
+	addModuleToCourse,
+	getCourses,
 };

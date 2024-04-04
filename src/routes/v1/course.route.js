@@ -19,6 +19,9 @@ router.post('/module/:module_id/discussion/:discussion_id/reply', auth(), module
 router.post('/module/:module_id/discussion/:discussion_id/toggle-upvote', auth(), moduleController.toggleUpvoteDiscussion);
 router.get('/module/:module_id/exam', auth(), moduleController.getExam);
 router.post('/module/:module_id/exam/:exam_id', auth(), moduleController.submitExam);
+router.post('/', auth(), courseController.createCourse);
+router.post('/list', auth(), courseController.getCourses);
+router.post('/:courseId/add-module', auth(), courseController.addModuleToCourse);
 // router.post('/module/:module_id/discussion/:discussion_id/reply', courseController.updateModuleProgress);
 
 module.exports = router;

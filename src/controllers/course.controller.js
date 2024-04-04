@@ -17,8 +17,26 @@ const getUserCourse = catchAsync(async (req, res) => {
   res.status(httpStatus.OK).send(courses);
 });
 
+const createCourse = catchAsync(async (req, res) => {
+  const course = await courseService.createCourse(req.body);
+  res.status(httpStatus.OK).send(course);
+});
+
+const getCourses = catchAsync(async (req, res) => {
+  const course = await courseService.getCourse(req.body, req.query);
+  res.status(httpStatus.OK).send(course);
+});
+
+const addModuleToCourse = catchAsync(async (req, res) => {
+  await courseService.addModuleToCourse(req.body, req.query);
+  res.status(httpStatus.OK).send('Added');
+});
+
 module.exports = {
   getCourse,
   updateModuleProgress,
   getUserCourse,
+	createCourse,
+	getCourses,
+	addModuleToCourse
 };

@@ -6,12 +6,28 @@ const courseSchema = mongoose.Schema(
     title: {
       type: String,
       trim: true,
+			required: true,
     },
     description: {
       type: String,
       trim: true,
+			required: true,
+    },
+		thumbnail: {
+      type: String,
+      trim: true,
     },
     modules: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Module' }],
+		skill_tags: [{
+			skill: {
+				type: mongoose.Schema.Types.ObjectId,
+				ref: 'Subject',
+			},
+			level: {
+				type: String,
+				enum: ['Beginner', 'Intermediate', 'Advanced']
+			}
+		}]
   },
   {
     timestamps: true,
