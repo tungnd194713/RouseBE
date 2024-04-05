@@ -105,7 +105,12 @@ const updateModuleProgress = async (moduleId, updateBody) => {
  * @returns {Promise<QueryResult>}
  */
 const getCourses = async (filter, options) => {
-	return Course.paginate(filter, options);
+	const queryOption = {
+		...options,
+		populate: 'skill_tags.skill',
+	}
+	const courses = await Course.paginate(filter, queryOption);
+	return courses;
 }
 
 const createCourse = async (body) => {
@@ -140,6 +145,10 @@ const addModuleToCourse = async (courseId, body) => {
 	}
 }
 
+const findCourseById = async (courseId) => {
+	return Course.findById(courseId).populate('modules');
+}
+
 module.exports = {
   getCourse,
   updateModuleProgress,
@@ -147,4 +156,5 @@ module.exports = {
 	createCourse,
 	addModuleToCourse,
 	getCourses,
+	findCourseById,
 };

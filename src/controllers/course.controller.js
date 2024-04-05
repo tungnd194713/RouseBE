@@ -23,7 +23,7 @@ const createCourse = catchAsync(async (req, res) => {
 });
 
 const getCourses = catchAsync(async (req, res) => {
-  const course = await courseService.getCourse(req.body, req.query);
+  const course = await courseService.getCourses(req.body, req.query);
   res.status(httpStatus.OK).send(course);
 });
 
@@ -32,11 +32,17 @@ const addModuleToCourse = catchAsync(async (req, res) => {
   res.status(httpStatus.OK).send('Added');
 });
 
+const findCourseById = catchAsync(async (req, res) => {
+  const course = await courseService.findCourseById(req.params.courseId);
+  res.status(httpStatus.OK).send(course);
+});
+
 module.exports = {
   getCourse,
   updateModuleProgress,
   getUserCourse,
 	createCourse,
 	getCourses,
-	addModuleToCourse
+	addModuleToCourse,
+	findCourseById
 };

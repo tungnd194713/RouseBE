@@ -22,6 +22,7 @@ router.post('/module/:module_id/exam/:exam_id', auth(), moduleController.submitE
 router.post('/', auth(), courseController.createCourse);
 router.post('/list', auth(), courseController.getCourses);
 router.post('/:courseId/add-module', auth(), courseController.addModuleToCourse);
+router.post('/:courseId/', auth(), courseController.findCourseById);
 // router.post('/module/:module_id/discussion/:discussion_id/reply', courseController.updateModuleProgress);
 
 module.exports = router;
