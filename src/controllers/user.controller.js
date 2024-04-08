@@ -64,6 +64,11 @@ const suggestJobs = catchAsync(async (req, res) => {
   res.status(httpStatus.OK).send(data);
 });
 
+const getDetailJob = catchAsync(async (req, res) => {
+  const data = await userService.getDetailJob(req.user._id, req.params.jobId);
+  res.status(httpStatus.OK).send(data);
+});
+
 module.exports = {
   createUser,
   getUsers,
@@ -76,4 +81,5 @@ module.exports = {
 	getJobMatchingPoint,
   findJob,
   suggestJobs,
+	getDetailJob,
 };

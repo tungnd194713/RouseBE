@@ -26,6 +26,7 @@ router.post('/profile/update-info-advanced', upload.none(), auth(), userControll
 router.get('/jobs/:jobId/matching-point', auth(), userController.getJobMatchingPoint);
 router.post('/jobs/find', auth(), userController.findJob);
 router.post('/jobs/suggest', auth(), userController.suggestJobs);
+router.get('/jobs/:jobId', auth(), userController.getDetailJob);
 
 module.exports = router;
 

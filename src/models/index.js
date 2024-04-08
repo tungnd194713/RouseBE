@@ -32,3 +32,4 @@ module.exports.JobTitle = require('./jobTitle.model');
 module.exports.Major = require('./major.model');
 module.exports.UserProfile = require('./userProfile.model');
 module.exports.JobEducation = require('./jobEducation.model');
+module.exports.JobRequirement = require('./jobRequirement.model');
