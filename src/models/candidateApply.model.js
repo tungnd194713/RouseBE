@@ -2,12 +2,12 @@ const mongoose = require('mongoose');
 const { toJSON, paginate } = require('./plugins');
 
 const candidateApplySchema = new mongoose.Schema({
-  job_id: {
+  job: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Job',
     required: true,
   },
-  user_id: {
+  user: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true,
@@ -37,6 +37,18 @@ const candidateApplySchema = new mongoose.Schema({
     required: true,
     default: false,
   },
+	education_applied: {
+    type: Number,
+    required: true,
+    default: 0,
+    enum: [0, 1],
+  },
+	education_courses: [
+		{
+			type: mongoose.Schema.Types.ObjectId,
+			ref: 'Course'
+		}
+	]
 }, {
   timestamps: true,
 });

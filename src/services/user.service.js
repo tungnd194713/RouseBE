@@ -1,5 +1,5 @@
 const httpStatus = require('http-status');
-const { User, UserProfile, Job, JobEducation, CertificateSubjects, CollegeSubjects, JobRequirement } = require('../models');
+const { User, UserProfile, Job, JobEducation, CertificateSubjects, CollegeSubjects, JobRequirement, Subject } = require('../models');
 const ApiError = require('../utils/ApiError');
 
 function skillLevelCompare(requirementLevel, profileLevel) {
@@ -529,6 +529,15 @@ const getDetailJob = async (userId, jobId) => {
 	const jobRequirements = await JobRequirement.find({ job: jobId }).populate('skills certificates majors colleges');
 
 	const suggestResult = suggestLogic(jobRequirements, userSubjects, certificateIds, majorIds, certificateObjects, majorObjects);
+	const needToLearn = removeDuplicates(suggestResult.needToLearnSkill.flat());
+	const needToLearnSkills = await Subject.find({_id: {$in: needToLearn.map(item => item.skill)}})
+	const matchedLearning = needToLearnSkills.map(item1 => {
+    const matchingItem = needToLearn.find(item2 => item2.skill.toString() === item1.id.toString());
+    return {
+        name: item1.name,
+        ...matchingItem
+    };
+	});
 	return {
 		...job.toObject(),
 		date_start: job.date_start ? formatDate(job.date_start) : null,
@@ -537,7 +546,7 @@ const getDetailJob = async (userId, jobId) => {
 		scholarship: education ? education.scholarship : null,
 		requirements: jobRequirements,
 		id: job._id,
-		need_to_learn: removeDuplicates(suggestResult.needToLearnSkill.flat()),
+		need_to_learn: matchedLearning,
 		job_point: suggestResult.jobPoint,
 		user_job_point: suggestResult.userJobPoint,
 	}
