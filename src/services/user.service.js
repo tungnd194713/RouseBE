@@ -483,8 +483,11 @@ const suggestJobs = async (userId) => {
       need_to_learn: removeDuplicates(suggestResult.needToLearnSkill.flat()),
       job_point: suggestResult.jobPoint,
       user_job_point: suggestResult.userJobPoint,
+			matching_point: suggestResult.userJobPoint / suggestResult.jobPoint,
     }
   })
+
+	availableJobs = availableJobs.sort((a, b) => b.matching_point - a.matching_point);
 
   return {
 		data: availableJobs,
