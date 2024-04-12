@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const { Company, Job, CandidateApply, Subject, College, Certificate, Major, CertificateSubjects, CollegeSubjects, JobEducation, UserProfile } = require('../models');
+const { Company, Job, CandidateApply, Subject, College, Certificate, Major, CertificateSubjects, CollegeSubjects, JobEducation, UserProfile, User } = require('../models');
 const JobRequirement = require('../models/jobRequirement.model');
 
 function formatDate(dateString) {
@@ -254,6 +254,13 @@ const getJobCandidateApplies = async (job_id) => {
 	return CandidateApply.find({job_id});
 }
 
+const getUserCv = async (userId) => {
+	const profile = await UserProfile.findOne({ user: userId }).populate('user skills.skill educations.college educations.major certificates.certificate');
+	return {
+		...profile.toObject(),
+	}
+}
+
 const mainSuggestionLogic = async (beginnerSkills, intermediateSkills, advancedSkills, certificates, collegeMajors) => {
 	const certificateObjects = await CertificateSubjects.find({
 		certificates: { $in: certificates },
@@ -439,4 +446,5 @@ module.exports = {
 	seedSubject,
 	getRequirementOptions,
   deleteJob,
+	getUserCv,
 }

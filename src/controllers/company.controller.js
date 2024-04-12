@@ -56,6 +56,11 @@ const seedSubject = catchAsync(async (req, res) => {
   res.status(httpStatus.OK).send(jobs);
 });
 
+const getUserCv = catchAsync(async (req, res) => {
+  const data = await companyService.getUserCv(req.params.userId);
+  res.status(httpStatus.OK).send(data);
+});
+
 module.exports = {
 	getCompanyJobs,
 	me,
@@ -67,4 +72,5 @@ module.exports = {
 	getRequirementOptions,
   deleteJob,
   getCandidateApplies,
+	getUserCv,
 }

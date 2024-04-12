@@ -34,6 +34,7 @@ const userProfileSchema = new Schema({
   }],
   working_experiences: [{
     name: { type: String },
+		position: { type: String },
     start_at: { type: Date },
     end_at: { type: Date },
     status: {
