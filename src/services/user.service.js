@@ -1,5 +1,5 @@
 const httpStatus = require('http-status');
-const { User, UserProfile, Job, JobEducation, CertificateSubjects, CollegeSubjects, JobRequirement, Subject } = require('../models');
+const { User, UserProfile, Job, JobEducation, CertificateSubjects, CollegeSubjects, JobRequirement, Subject, Certificate, Major } = require('../models');
 const ApiError = require('../utils/ApiError');
 
 function skillLevelCompare(requirementLevel, profileLevel) {
@@ -271,6 +271,7 @@ const suggestLogic = (jobRequirements, userSubjects, certificateIds, majorIds, c
 	let jobPoint = 0;
 	let userJobPoint = 0;
 	const needToLearnSkill = [];
+  const jobMatchingData = [];
 	const certificateRequirements = jobRequirements.filter((item) => item.type === 'Certificate').map((item) => item.certificates.map((iitem) => iitem.id));
 	const majorRequirements = jobRequirements.filter((item) => item.type === 'Major').map((item) => item.majors.map((iitem) => iitem.id));
 	const skillRequirements = jobRequirements.filter((item) => item.type === 'Skill').map((item) => {
@@ -289,8 +290,10 @@ const suggestLogic = (jobRequirements, userSubjects, certificateIds, majorIds, c
 		let isSuitableCertificate = false;
 		let cerPointArr = [];
 		let cerLearn = [];
+    let userCer = [];
 		certificates.forEach((certificate) => {
 			let cerN = [];
+      let userC = [];
 			let userP = 0;
 			const cerObjects = certificateObjects.find((item) => item.certificate.toString() === certificate.toString());
 			const subObjects = cerObjects.subject_objects;
@@ -300,6 +303,18 @@ const suggestLogic = (jobRequirements, userSubjects, certificateIds, majorIds, c
 					userJobPoint += subPoint;
 					currentCertificatePoint = subPoint;
 					isSuitableCertificate = true;
+          const matchedCertificate = certificateIds.find((item) => item.toString() === certificate.toString());
+          jobMatchingData.push({
+            jobRequirement: {
+              type: 'Certificate',
+              requirements: certificates,
+            },
+            userProfile: [{
+              type: 'Certificate',
+              id: matchedCertificate,
+            }],
+            matchingPoint: subPoint,
+          })
 				} else {
 					subObjects.forEach((sub_object) => {
 						let isMatched = false;
@@ -315,6 +330,24 @@ const suggestLogic = (jobRequirements, userSubjects, certificateIds, majorIds, c
 											skill: sub_object.subject
 										});
 									}
+                  if (user_item.certificate) {
+                    userC.push({
+                      type: 'Certificate',
+                      id: user_item.certificate
+                    })
+                  }
+                  else if (user_item.major) {
+                    userC.push({
+                      type: 'Major',
+                      id: user_item.major
+                    })
+                  } else {
+                    userC.push({
+                      type: 'Skill',
+                      id: user_item.skill,
+                      level: user_item.level
+                    })
+                  }
 								}
 							}
 						})
@@ -327,6 +360,7 @@ const suggestLogic = (jobRequirements, userSubjects, certificateIds, majorIds, c
 					})
 					cerPointArr.push(userP / subPoint);
 					cerLearn.push(removeDuplicates(cerN));
+          userCer.push(userC);
 				}
 			}
 		})
@@ -339,6 +373,14 @@ const suggestLogic = (jobRequirements, userSubjects, certificateIds, majorIds, c
 				jobPoint += jobP
 				userJobPoint += cerPointArr[index] * jobP;
 				needToLearnSkill.push(cerLearn[index]);
+        jobMatchingData.push({
+          jobRequirement: {
+            type: 'Certificate',
+            requirements: certificates,
+          },
+          userProfile: userCer[index],
+          matchingPoint: cerPointArr[index] * jobP,
+        })
 			}
 		}
 	})
@@ -347,17 +389,31 @@ const suggestLogic = (jobRequirements, userSubjects, certificateIds, majorIds, c
 		let isSuitableMajor = false;
 		let majPointArr = [];
 		let majLearn = [];
+    let userCer = [];
 		majors.forEach((major) => {
 			let majN = [];
 			let userP = 0;
+      let userC = [];
 			const majObjects = majorObjects.find((item) => item.major.toString() === major.toString());
 			const subObjects = majObjects.subject_objects;
 			const subPoint = subObjects.length;
+      const matchedMajor = majorIds.find((item) => item.toString() === major.toString());
 			if (!isSuitableMajor) {
 				if (majorIds.includes(major)) {
 					userJobPoint += subPoint;
 					currentMajorPoint = subPoint;
 					isSuitableMajor = true;
+          jobMatchingData.push({
+            jobRequirement: {
+              type: 'Major',
+              requirements: majors,
+            },
+            userProfile: [{
+              type: 'Major',
+              id: matchedMajor,
+            }],
+            matchingPoint: subPoint,
+          })
 				} else {
 					subObjects.forEach((sub_object) => {
 						let isMatched = false;
@@ -373,6 +429,24 @@ const suggestLogic = (jobRequirements, userSubjects, certificateIds, majorIds, c
 											skill: sub_object.subject
 										});
 									}
+                  if (user_item.certificate) {
+                    userC.push({
+                      type: 'Certificate',
+                      id: user_item.certificate
+                    })
+                  }
+                  else if (user_item.major) {
+                    userC.push({
+                      type: 'Major',
+                      id: user_item.major
+                    })
+                  } else {
+                    userC.push({
+                      type: 'Skill',
+                      id: user_item.skill,
+                      level: user_item.level
+                    })
+                  }
 								}
 							}
 						})
@@ -385,6 +459,7 @@ const suggestLogic = (jobRequirements, userSubjects, certificateIds, majorIds, c
 					})
 					majPointArr.push(userP / subPoint);
 					majLearn.push(removeDuplicates(majN));
+          userCer.push(userC);
 				}
 			}
 		})
@@ -397,6 +472,14 @@ const suggestLogic = (jobRequirements, userSubjects, certificateIds, majorIds, c
 				jobPoint += jobP
 				userJobPoint += majPointArr[index] * jobP;
 				needToLearnSkill.push(majLearn[getIndexOfMax(majPointArr)]);
+        jobMatchingData.push({
+          jobRequirement: {
+            type: 'Major',
+            requirements: majors,
+          },
+          userProfile: userCer[index],
+          matchingPoint: majPointArr[index] * jobP,
+        })
 			}
 		}
 	})
@@ -416,6 +499,19 @@ const suggestLogic = (jobRequirements, userSubjects, certificateIds, majorIds, c
 							});
 						}
 						suitableSkill = true;
+            jobMatchingData.push({
+              jobRequirement: {
+                type: 'Skill',
+                requirements: skills.skills,
+                level: skillLevel,
+              },
+              userProfile: [{
+                type: 'Skill',
+                id: user_item.skill,
+                level: user_item.level
+              }],
+              matchingPoint: compared,
+            })
 					} else {
 						needToLearnSkill.push({
 							level: skillLevel,
@@ -425,13 +521,25 @@ const suggestLogic = (jobRequirements, userSubjects, certificateIds, majorIds, c
 				}
 			})
 		})
+    if (!suitableSkill) {
+      jobMatchingData.push({
+        jobRequirement: {
+          type: 'Skill',
+          requirements: skills.skills,
+          level: skillLevel,
+        },
+        userProfile: [],
+        matchingPoint: 0,
+      })
+    }
 		jobPoint += 1;
 	})
-	
+
 	return {
 		jobPoint,
 		userJobPoint,
 		needToLearnSkill,
+    jobMatchingData,
 	}
 }
 
@@ -443,34 +551,48 @@ const suggestJobs = async (userId) => {
   const certificateObjects = await CertificateSubjects.find({});
   const majorObjects = await CollegeSubjects.find({});
   let userCertificateSubjects = certificateObjects.filter((item) => certificateIds.includes(item.certificate))
-                                                  .map((item) => item.subject_objects)
+                                                  .map((item) => item.subject_objects.map((iitem) => {
+                                                    return {
+                                                      ...iitem.toObject(),
+                                                      certificate: item.certificate,
+                                                    }
+                                                  }))
                                                   .flat()
                                                   .map((item) => {
                                                     return {
                                                       level: item.level,
                                                       skill: item.subject,
                                                       _id: item._id,
+                                                      certificate: item.certificate,
                                                     }
                                                   })
   let userMajorSubjects = majorObjects.filter((item) => majorIds.includes(item.major))
-																			.map((item) => item.subject_objects)
-																			.flat()
-																			.map((item) => {
-																				return {
-																					level: item.level,
-																					skill: item.subject,
-																					_id: item._id,
-																				}
-																			})
+                                      .map((item) => item.subject_objects.map((iitem) => {
+                                        return {
+                                          ...iitem.toObject(),
+                                          major: item.major,
+                                        }
+                                      }))
+                                      .flat()
+                                      .map((item) => {
+                                        return {
+                                          level: item.level,
+                                          skill: item.subject,
+                                          _id: item._id,
+                                          major: item.major,
+                                        }
+                                      })
   userSubjects = removeDuplicates(userSubjects.concat(userCertificateSubjects, userMajorSubjects));
   let availableJobs = await Job.find({ status: 1 });
   const jobIds = availableJobs.map((item) => item._id);
   const requirements = await JobRequirement.find({ job: { $in: jobIds } }).populate('skills certificates majors colleges');
   const educations = await JobEducation.find({job: { $in: jobIds }});
-	
+
   availableJobs = availableJobs.map((job) => {
 		const education = educations.find(edu => edu.job.toString() == job._id.toString());
     const jobRequirements = requirements.filter((item) => item.job.toString() === job._id.toString());
+    const previewSkills = requirements.filter(item => item.type === 'Skill').map(obj => obj.skills).slice(0, 3);
+
 		const suggestResult = suggestLogic(jobRequirements, userSubjects, certificateIds, majorIds, certificateObjects, majorObjects);
     return {
       ...job.toObject(),
@@ -484,6 +606,7 @@ const suggestJobs = async (userId) => {
       job_point: suggestResult.jobPoint,
       user_job_point: suggestResult.userJobPoint,
 			matching_point: suggestResult.userJobPoint / suggestResult.jobPoint,
+      previewSkills,
     }
   })
 
@@ -505,27 +628,39 @@ const getDetailJob = async (userId, jobId) => {
 	const certificateIds = userProfile.certificates.map((item) => item.certificate);
 	const certificateObjects = await CertificateSubjects.find({});
   let userCertificateSubjects = certificateObjects.filter((item) => certificateIds.includes(item.certificate))
-                                                  .map((item) => item.subject_objects)
+                                                  .map((item) => item.subject_objects.map((iitem) => {
+                                                    return {
+                                                      ...iitem.toObject(),
+                                                      certificate: item.certificate,
+                                                    }
+                                                  }))
                                                   .flat()
                                                   .map((item) => {
                                                     return {
                                                       level: item.level,
                                                       skill: item.subject,
                                                       _id: item._id,
+                                                      certificate: item.certificate,
                                                     }
                                                   })
   const majorObjects = await CollegeSubjects.find({});
   const majorIds = userProfile.educations.map((item) => item.major);
 	const userMajorSubjects = majorObjects.filter((item) => majorIds.includes(item.major))
-																				.map((item) => item.subject_objects)
-																				.flat()
-																				.map((item) => {
-																					return {
-																						level: item.level,
-																						skill: item.subject,
-																						_id: item._id,
-																					}
-																				})
+                                        .map((item) => item.subject_objects.map((iitem) => {
+                                          return {
+                                            ...iitem.toObject(),
+                                            major: item.major,
+                                          }
+                                        }))
+                                        .flat()
+                                        .map((item) => {
+                                          return {
+                                            level: item.level,
+                                            skill: item.subject,
+                                            _id: item._id,
+                                            major: item.major,
+                                          }
+                                        })
 	userSubjects = removeDuplicates(userSubjects.concat(userCertificateSubjects, userMajorSubjects));
 	const job = await Job.findById(jobId);
   const education = await JobEducation.findOne({job: jobId });
@@ -541,18 +676,163 @@ const getDetailJob = async (userId, jobId) => {
         ...matchingItem
     };
 	});
+  const beginnerSkills = jobRequirements.filter(item => item.type === 'Skill' && item.level === 'Beginner').map(obj => obj.skills);
+  const intermediateSkills = jobRequirements.filter(item => item.type === 'Skill' && item.level === 'Intermediate').map(obj => obj.skills);
+  const advancedSkills = jobRequirements.filter(item => item.type === 'Skill' && item.level === 'Advanced').map(obj => obj.skills);
+  const certificates = jobRequirements.filter(item => item.type === 'Certificate').map(obj => obj.certificates);
+  const majorColleges = jobRequirements.filter(item => item.type === 'Major').map(obj => {
+    return {
+      majors: obj.majors,
+      colleges: obj.colleges
+    }
+  });
+  const previewSkills = jobRequirements.filter(item => item.type === 'Skill').map(obj => obj.skills).slice(0, 3).flat().map(item => item.name);
+
+  const jobMatchingData = suggestResult.jobMatchingData;
+
+  let jobMatchingDataFinal = [];
+  let allIds = new Set();
+  jobMatchingData.forEach(doc => {
+      doc.jobRequirement.requirements.forEach(req => allIds.add(req.toString()));
+      doc.userProfile.forEach(profile => allIds.add(profile.id.toString()));
+  });
+
+  allIds = Array.from(allIds); // Convert Set to Array for easier processing
+
+  // Retrieve certificates, majors, and skills data by IDs
+  const convertedCertificate = await Certificate.find({ _id: { $in: allIds } });
+  const convertedMajor = await Major.find({ _id: { $in: allIds } });
+  const convertedSkill = await Subject.find({ _id: { $in: allIds } });
+
+  // Map data by ID for efficient lookup
+  const certificatesMap = new Map(convertedCertificate.map(cert => [cert._id.toString(), cert]));
+  const majorsMap = new Map(convertedMajor.map(major => [major._id.toString(), major]));
+  const skillsMap = new Map(convertedSkill.map(skill => [skill._id.toString(), skill]));
+
+  // Match data with the original documents
+  jobMatchingData.forEach(doc => {
+    const newDoc = {
+      jobRequirement: {
+        type: doc.jobRequirement.type,
+        requirements: [],
+      },
+      userProfile: [],
+      matchingPoint: doc.matchingPoint
+    };
+    if (doc.jobRequirement.level) {
+      newDoc.jobRequirement.level = doc.jobRequirement.level;
+    }
+      doc.jobRequirement.requirements.forEach(req => {
+        const newRequirement = {}
+        switch (doc.jobRequirement.type) {
+          case 'Certificate':
+              const certificateData = certificatesMap.get(req);
+              newDoc.jobRequirement.type = 'Certificate';
+              newRequirement.id = req
+              newRequirement.name = certificateData ? certificateData.name : ''
+              break;
+          case 'Major':
+              const majorData = majorsMap.get(req);
+              newDoc.jobRequirement.type = 'Major';
+              newRequirement.id = req
+              newRequirement.name = majorData ? majorData.name : ''
+              break;
+          case 'Skill':
+              const skillData = skillsMap.get(req);
+              newDoc.jobRequirement.type = 'Skill';
+              newRequirement.id = req
+              newRequirement.name = skillData ? skillData.name : ''
+              break;
+          default:
+              break;
+        }
+        newDoc.jobRequirement.requirements.push(newRequirement)
+      });
+      doc.userProfile.forEach(profile => {
+          switch (profile.type) {
+              case 'Certificate':
+                  const certificateData = certificatesMap.get(profile.id).toString();
+                  newDoc.userProfile.push({
+                    ...profile,
+                    name: certificateData ? certificateData.name : '',
+                  })
+                  break;
+              case 'Major':
+                  const majorData = majorsMap.get(profile.id.toString());
+                  newDoc.userProfile.push({
+                    ...profile,
+                    name: majorData ? majorData.name : '',
+                  })
+                  break;
+              case 'Skill':
+                  const skillData = skillsMap.get(profile.id.toString());
+                  newDoc.userProfile.push({
+                    ...profile,
+                    name: skillData ? skillData.name : '',
+                    level: profile?.level
+                  })
+                  break;
+              default:
+                  break;
+          }
+      });
+      jobMatchingDataFinal.push(newDoc)
+   });
+
+  jobMatchingDataFinal.forEach(obj => {
+    const userProfile = obj.userProfile;
+    const uniqueUserProfiles = userProfile.reduce((acc, current) => {
+      const existing = acc.find(item => item.id === current.id);
+      if (!existing) {
+          acc.push(current);
+      }
+      return acc;
+    }, []);
+    obj.userProfile = uniqueUserProfiles;
+  });
+
 	return {
 		...job.toObject(),
 		date_start: job.date_start ? formatDate(job.date_start) : null,
 		date_end: job.date_start ? addMonthsToDate(job.date_start, job.display_month) : null,
 		max_education_month: education ? education.max_education_month : null,
 		scholarship: education ? education.scholarship : null,
-		requirements: jobRequirements,
 		id: job._id,
 		need_to_learn: matchedLearning,
 		job_point: suggestResult.jobPoint,
 		user_job_point: suggestResult.userJobPoint,
+		job_matching_data: jobMatchingDataFinal,
+    beginnerSkills,
+    intermediateSkills,
+    advancedSkills,
+    certificates,
+    majorColleges,
+    previewSkills
 	}
+}
+
+const convertJobMatchingData = async (data) => {
+  // [{
+  //   jobRequirement: {
+  //     type: Enum('Certificate', 'Major', 'Skill'),
+  //     requirement: [
+  //       {
+  //         id,
+  //         name,
+  //       }
+  //     ]
+  //   },
+  //   userProfile: [
+  //     {
+  //       type: Enum('Certificate', 'Major', 'Skill'),
+  //       id,
+  //       name,
+  //     }
+  //   ],
+  //   matchingPoint: Number,
+  // }]
+
+
 }
 
 const jobMatchingPoint = async (user_id, job_id) => {
