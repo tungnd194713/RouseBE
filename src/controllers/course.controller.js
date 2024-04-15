@@ -37,6 +37,11 @@ const findCourseById = catchAsync(async (req, res) => {
   res.status(httpStatus.OK).send(course);
 });
 
+const seedLearningData = catchAsync(async (req, res) => {
+  const course = await courseService.seedLearningData();
+  res.status(httpStatus.OK).send(course);
+});
+
 module.exports = {
   getCourse,
   updateModuleProgress,
@@ -44,5 +49,6 @@ module.exports = {
 	createCourse,
 	getCourses,
 	addModuleToCourse,
-	findCourseById
+	findCourseById,
+	seedLearningData
 };

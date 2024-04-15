@@ -1,6 +1,6 @@
 // const httpStatus = require('http-status');
 const mongoose = require('mongoose');
-const { ModuleProgress, User, Module, Course } = require('../models');
+const { ModuleProgress, User, Module, Course, Subject } = require('../models');
 const ApiError = require('../utils/ApiError');
 
 // eslint-disable-next-line camelcase
@@ -149,6 +149,126 @@ const findCourseById = async (courseId) => {
 	return Course.findById(courseId).populate('modules');
 }
 
+const seedLearningData = async () => {
+	const subject = await Subject.findOne({ name: 'MySQL' });
+	if (!subject) {
+		throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'Skill not found');
+	}
+	const modulesData = [
+		{
+			name: 'Advanced SQL Queries',
+			description: 'Learn advanced SQL query techniques for data retrieval and manipulation',
+			video: 'advanced_sql_queries.mp4',
+			estimated_time: 4,
+			check_point_quizzes: [
+				{
+					question: 'Which SQL keyword is used to retrieve data from multiple tables?',
+					correct_answer: 2,
+					check_time: 3,
+					answers: [
+						{ text: 'JOIN', value: 0 },
+						{ text: 'SELECT', value: 1 },
+						{ text: 'INNER JOIN', value: 2 },
+					],
+				},
+			],
+		},
+		{
+			name: 'Database Design and Optimization',
+			description: 'Explore techniques for designing and optimizing database schemas in MySQL',
+			video: 'db_design_optimization.mp4',
+			estimated_time: 4,
+			check_point_quizzes: [
+				{
+					question: 'What is normalization in database design?',
+					correct_answer: 0,
+					check_time: 3,
+					answers: [
+						{ text: 'The process of organizing data to minimize redundancy', value: 0 },
+						{ text: 'The process of adding redundancy to improve performance', value: 1 },
+						{ text: 'The process of denormalizing data for easier querying', value: 2 },
+					],
+				},
+			],
+		},
+		{
+			name: 'Stored Procedures and Functions',
+			description: 'Learn how to create and use stored procedures and functions in MySQL',
+			video: 'stored_procedures_functions.mp4',
+			estimated_time: 4,
+			check_point_quizzes: [
+				{
+					question: 'What is a stored procedure in MySQL?',
+					correct_answer: 1,
+					check_time: 3,
+					answers: [
+						{ text: 'A query used to retrieve data from a database', value: 0 },
+						{ text: 'A precompiled set of SQL statements for execution', value: 1 },
+						{ text: 'A function used to perform calculations on data', value: 2 },
+					],
+				},
+			],
+		},
+		{
+			name: 'Transaction Management',
+			description: 'Understand transaction concepts and techniques for managing transactions in MySQL',
+			video: 'transaction_management.mp4',
+			estimated_time: 4,
+			check_point_quizzes: [
+				{
+					question: 'What is a transaction in MySQL?',
+					correct_answer: 2,
+					check_time: 3,
+					answers: [
+						{ text: 'A single SQL statement', value: 0 },
+						{ text: 'A session with the MySQL server', value: 1 },
+						{ text: 'A unit of work that is executed as a single, atomic operation', value: 2 },
+					],
+				},
+			],
+		},
+		{
+			name: 'Security and User Management',
+			description: 'Learn about security features and user management in MySQL databases',
+			video: 'security_user_management.mp4',
+			estimated_time: 4,
+			check_point_quizzes: [
+				{
+					question: 'What is the purpose of the GRANT statement in MySQL?',
+					correct_answer: 0,
+					check_time: 3,
+					answers: [
+						{ text: 'To assign privileges to MySQL users', value: 0 },
+						{ text: 'To revoke privileges from MySQL users', value: 1 },
+						{ text: 'To create new MySQL users', value: 2 },
+					],
+				},
+			],
+		},
+	];
+	
+	
+	Module.insertMany(modulesData)
+  .then(modules => {
+    // Create course
+    const courseData = {
+			title: 'Intermediate MySQL Database Management',
+      description: 'A course covering intermediate level MySQL database management concepts and techniques',
+      skill_tags: [{ skill: subject._id, level: 'Intermediate' }],
+      modules: modules.map(module => module._id), // Store module ids in course
+    };
+
+    // Save course to MongoDB
+    return Course.create(courseData);
+  })
+  .then(course => {
+    console.log('Course with Web for advanced level tag seeded successfully:', course);
+  })
+  .catch(error => {
+    console.error('Error seeding course:', error);
+  });
+}
+
 module.exports = {
   getCourse,
   updateModuleProgress,
@@ -157,4 +277,5 @@ module.exports = {
 	addModuleToCourse,
 	getCourses,
 	findCourseById,
+	seedLearningData,
 };
