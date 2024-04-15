@@ -1,5 +1,5 @@
 const httpStatus = require('http-status');
-const { User, UserProfile, Job, JobEducation, CertificateSubjects, CollegeSubjects, JobRequirement, Subject, Certificate, Major } = require('../models');
+const { User, UserProfile, Job, JobEducation, CertificateSubjects, CollegeSubjects, JobRequirement, Subject, Certificate, Major, CandidateApply } = require('../models');
 const ApiError = require('../utils/ApiError');
 
 function skillLevelCompare(requirementLevel, profileLevel) {
@@ -811,28 +811,20 @@ const getDetailJob = async (userId, jobId) => {
 	}
 }
 
-const convertJobMatchingData = async (data) => {
-  // [{
-  //   jobRequirement: {
-  //     type: Enum('Certificate', 'Major', 'Skill'),
-  //     requirement: [
-  //       {
-  //         id,
-  //         name,
-  //       }
-  //     ]
-  //   },
-  //   userProfile: [
-  //     {
-  //       type: Enum('Certificate', 'Major', 'Skill'),
-  //       id,
-  //       name,
-  //     }
-  //   ],
-  //   matchingPoint: Number,
-  // }]
+const applyJob = async (user_id, job_id, body) => {
+  const isApplied = await CandidateApply.findOne({ job: job_id, user: user_id });
+  if (isApplied) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'Already applied');
+  }
+  return CandidateApply.create({
+    ...body,
+    user: user_id,
+    job: job_id
+  })
+}
 
-
+const getAppliedJob = async (user_id) => {
+  return CandidateApply.find({ user: user_id }).populate('job');
 }
 
 const jobMatchingPoint = async (user_id, job_id) => {
@@ -890,4 +882,6 @@ module.exports = {
   findJob,
   suggestJobs,
 	getDetailJob,
+  applyJob,
+  getAppliedJob,
 };

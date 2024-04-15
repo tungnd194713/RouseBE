@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const { Company, Job, CandidateApply, Subject, College, Certificate, Major, CertificateSubjects, CollegeSubjects, JobEducation, UserProfile, User } = require('../models');
 const JobRequirement = require('../models/jobRequirement.model');
+const ApiError = require('../utils/ApiError');
 
 function formatDate(dateString) {
 	const date = new Date(dateString);
@@ -250,14 +251,30 @@ const getCandidateApplies = async (params) => {
 	};
 }
 
-const getJobCandidateApplies = async (job_id) => {
-	return CandidateApply.find({job_id});
+const getJobCandidateApplies = async (job_id, options, params) => {
+  const filter = {
+    job: job_id,
+  }
+  const queryOptions = {
+		...options,
+	}
+  if (params && params.status) {
+    filter.status = params.status;
+  }
+	return CandidateApply.paginate(filter, queryOptions);
 }
 
-const getUserCv = async (userId) => {
-	const profile = await UserProfile.findOne({ user: userId }).populate('user skills.skill educations.college educations.major certificates.certificate');
+const getUserCv = async (candidateApplyId) => {
+  const candidateApply = await CandidateApply.findById(candidateApplyId);
+  if (!candidateApply) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'CV not found');
+  }
+	const profile = await UserProfile.findOne({ user: candidateApply.user }).populate('user skills.skill educations.college educations.major certificates.certificate');
 	return {
+    ...candidateApply.toObject(),
 		...profile.toObject(),
+    id: candidateApply._id || candidateApply.id,
+    candidateApplyId: candidateApply._id || candidateApply.id,
 	}
 }
 

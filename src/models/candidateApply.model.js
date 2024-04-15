@@ -23,7 +23,7 @@ const candidateApplySchema = new mongoose.Schema({
     type: Number,
     required: true,
     default: 1,
-    enum: [1, 2, 3, 4, 5, 6],
+    enum: [1, 2, 3, 4, 5, 6, 7, 8, 9],
   },
   note: String,
   read: {
