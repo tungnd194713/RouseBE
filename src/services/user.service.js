@@ -1,5 +1,5 @@
 const httpStatus = require('http-status');
-const { User, UserProfile, Job, JobEducation, CertificateSubjects, CollegeSubjects, JobRequirement, Subject, Certificate, Major, CandidateApply } = require('../models');
+const { User, UserProfile, Job, JobEducation, CertificateSubjects, CollegeSubjects, JobRequirement, Subject, Certificate, Major, CandidateApply, Course } = require('../models');
 const ApiError = require('../utils/ApiError');
 
 function skillLevelCompare(requirementLevel, profileLevel) {
@@ -676,6 +676,28 @@ const getDetailJob = async (userId, jobId) => {
         ...matchingItem
     };
 	});
+	const matchedCourses = await Course.find({
+		'skill_tags.skill': { $in: needToLearn.map(item => item.skill) }
+	}).populate('modules');
+	const needToLearnCourses = [];
+	matchedLearning.forEach((item) => {
+		const foundCourse = matchedCourses.find((course) => {
+			const foundTag = course.skill_tags.find((tag) => tag.skill.toString() === item.skill.toString() && tag.level === item.level);
+			if (foundTag) {
+				return true;
+			} else {
+				return false;
+			}
+		})
+		if (foundCourse) {
+			const timeCost = foundCourse.modules.reduce((acc, module) => acc + module.estimated_time, 0);
+			needToLearnCourses.push({
+				...foundCourse.toObject(),
+				timeCost,
+				tag: item,
+			})
+		}
+	})
   const beginnerSkills = jobRequirements.filter(item => item.type === 'Skill' && item.level === 'Beginner').map(obj => obj.skills);
   const intermediateSkills = jobRequirements.filter(item => item.type === 'Skill' && item.level === 'Intermediate').map(obj => obj.skills);
   const advancedSkills = jobRequirements.filter(item => item.type === 'Skill' && item.level === 'Advanced').map(obj => obj.skills);
@@ -807,7 +829,8 @@ const getDetailJob = async (userId, jobId) => {
     advancedSkills,
     certificates,
     majorColleges,
-    previewSkills
+    previewSkills,
+		needToLearnCourses
 	}
 }
 
