@@ -257,6 +257,7 @@ const getJobCandidateApplies = async (job_id, options, params) => {
   }
   const queryOptions = {
 		...options,
+    populate: 'user job'
 	}
   if (params && params.status) {
     filter.status = params.status;
@@ -265,17 +266,39 @@ const getJobCandidateApplies = async (job_id, options, params) => {
 }
 
 const getUserCv = async (candidateApplyId) => {
-  const candidateApply = await CandidateApply.findById(candidateApplyId);
+  const candidateApply = await CandidateApply.findById(candidateApplyId).populate('job');
   if (!candidateApply) {
     throw new ApiError(httpStatus.NOT_FOUND, 'CV not found');
   }
+  const jobEducation = candidateApply.job.accept_education ? await JobEducation.findOne({job: candidateApply.job._id}) : null;
 	const profile = await UserProfile.findOne({ user: candidateApply.user }).populate('user skills.skill educations.college educations.major certificates.certificate');
 	return {
     ...candidateApply.toObject(),
 		...profile.toObject(),
     id: candidateApply._id || candidateApply.id,
     candidateApplyId: candidateApply._id || candidateApply.id,
+    jobEducation,
 	}
+}
+
+const acceptEducation = async (candidateApplyId) => {
+  const candidateApply = await CandidateApply.findById(candidateApplyId);
+  if (!candidateApply) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'CV not found');
+  }
+  candidateApply.status = 3
+  await candidateApply.save();
+  return 'Update success'
+}
+
+const acceptInterview = async (candidateApplyId) => {
+  const candidateApply = await CandidateApply.findById(candidateApplyId);
+  if (!candidateApply) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'CV not found');
+  }
+  candidateApply.status = 2
+  await candidateApply.save();
+  return 'Update success'
 }
 
 const mainSuggestionLogic = async (beginnerSkills, intermediateSkills, advancedSkills, certificates, collegeMajors) => {
@@ -464,4 +487,6 @@ module.exports = {
 	getRequirementOptions,
   deleteJob,
 	getUserCv,
+  acceptEducation,
+  acceptInterview,
 }

@@ -61,6 +61,16 @@ const getUserCv = catchAsync(async (req, res) => {
   res.status(httpStatus.OK).send(data);
 });
 
+const acceptEducation = catchAsync(async (req, res) => {
+  const data = await companyService.acceptEducation(req.params.candidateId);
+  res.status(httpStatus.OK).send(data);
+});
+
+const acceptInterview = catchAsync(async (req, res) => {
+  const data = await companyService.acceptInterview(req.params.candidateId);
+  res.status(httpStatus.OK).send(data);
+});
+
 module.exports = {
 	getCompanyJobs,
 	me,
@@ -73,4 +83,6 @@ module.exports = {
   deleteJob,
   getCandidateApplies,
 	getUserCv,
+  acceptEducation,
+  acceptInterview,
 }

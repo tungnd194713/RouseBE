@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const { toJSON } = require('./plugins');
+const { toJSON, paginate } = require('./plugins');
 
 const jobEducationSchema = mongoose.Schema(
   {
@@ -21,6 +21,22 @@ const jobEducationSchema = mongoose.Schema(
       type: Number,
       required: true,
     },
+    status: {
+      type: Number,
+      enum: [1, 2, 3],
+      default: 1,
+    },
+    courses: [{
+      type: mongoose.SchemaTypes.ObjectId,
+      ref: 'Course',
+    }],
+    change_requests: [
+      {
+        content: String,
+        requested_date: Date,
+        is_read: Boolean,
+      }
+    ]
   },
   {
     timestamps: true,
@@ -29,6 +45,7 @@ const jobEducationSchema = mongoose.Schema(
 
 // add plugin that converts mongoose to json
 jobEducationSchema.plugin(toJSON);
+jobEducationSchema.plugin(paginate);
 
 /**
  * @typedef JobEducation

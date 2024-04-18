@@ -16,5 +16,8 @@ router.post('/milestone/:milestone_id/complete', auth(), roadmapController.compl
 router.post('/seed-category', roadmapController.seedCategory);
 router.post('/seed-milestone', roadmapController.seedMilestones);
 router.post('/seed-roadmap', roadmapController.seedRoadmap);
+router.post('/education-requests', roadmapController.getEducationRequests);
+router.get('/education-requests/:jobEducationId', roadmapController.getEducationCourses);
+router.get('/education-requests/:jobEducationId/courses/:courseId', roadmapController.getCourseDetail);
 
 module.exports = router;

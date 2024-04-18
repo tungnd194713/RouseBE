@@ -69,6 +69,26 @@ const getDetailJob = catchAsync(async (req, res) => {
   res.status(httpStatus.OK).send(data);
 });
 
+const applyJob = catchAsync(async (req, res) => {
+  const data = await userService.applyJob(req.user._id, req.body);
+  res.status(httpStatus.OK).send(data);
+});
+
+const getAppliedJobs = catchAsync(async (req, res) => {
+  const data = await userService.getAppliedJobs(req.user._id);
+  res.status(httpStatus.OK).send(data);
+});
+
+const startJobEducation = catchAsync(async (req, res) => {
+  const data = await userService.startJobEducation(req.user._id, req.params.candidateApplyId);
+  res.status(httpStatus.OK).send(data);
+});
+
+const getCurrentEducation = catchAsync(async (req, res) => {
+  const data = await userService.getCurrentEducation(req.user._id);
+  res.status(httpStatus.OK).send(data);
+});
+
 module.exports = {
   createUser,
   getUsers,
@@ -82,4 +102,8 @@ module.exports = {
   findJob,
   suggestJobs,
 	getDetailJob,
+  applyJob,
+  getAppliedJobs,
+  startJobEducation,
+  getCurrentEducation,
 };

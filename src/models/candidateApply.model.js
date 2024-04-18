@@ -7,6 +7,11 @@ const candidateApplySchema = new mongoose.Schema({
     ref: 'Job',
     required: true,
   },
+  company: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Company',
+    required: true,
+  },
   user: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
@@ -36,6 +41,9 @@ const candidateApplySchema = new mongoose.Schema({
     type: Boolean,
     required: true,
     default: false,
+  },
+  matching_point: {
+    type: Number,
   },
 	education_applied: {
     type: Number,

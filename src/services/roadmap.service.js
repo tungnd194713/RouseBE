@@ -2,7 +2,7 @@
 const httpStatus = require('http-status');
 const mongoose = require('mongoose');
 const ApiError = require('../utils/ApiError');
-const { RoadMap, Milestone, Category, SpecCategory, RoadmapTemplate, UserRoadMap, ModuleProgress } = require('../models');
+const { RoadMap, Milestone, Category, SpecCategory, RoadmapTemplate, UserRoadMap, ModuleProgress, JobEducation, Course } = require('../models');
 
 async function findRoadmap(categoryId, subCategoryId, mastery) {
   const query = {};
@@ -485,6 +485,41 @@ const seedRoadmap = async () => {
   RoadmapTemplate.insertMany(roadmaps);
 };
 
+
+const getEducationRequests = async (options, params) => {
+  const filter = {}
+  const queryOptions = {
+		...options,
+    populate: 'job,company'
+	}
+  if (params && params.status) {
+    filter.status = params.status;
+  }
+  return JobEducation.paginate(filter, queryOptions);
+}
+
+const getEducationCourses = async (jobEducationId) => {
+  const jobEducation = await JobEducation.findById(jobEducationId).populate('job company courses');
+  if (!jobEducation) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'Request not found');
+  }
+
+  return jobEducation;
+}
+
+const getCourseDetail = async (jobEducationId, courseId) => {
+  const jobEducation = await JobEducation.findById(jobEducationId).populate('job company');
+  if (!jobEducation) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'Request not found');
+  }
+  const hasCourse = jobEducation.courses.find((item) => item.toString() === courseId.toString());
+  if (!hasCourse) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'Course not found');
+  }
+  const course = await Course.findById(courseId);
+  return course;
+}
+
 module.exports = {
   findRoadmap,
   buildRoadmap,
@@ -498,4 +533,7 @@ module.exports = {
   seedMilestones,
   seedRoadmap,
   applyRoadmap,
+  getEducationRequests,
+  getEducationCourses,
+  getCourseDetail,
 };

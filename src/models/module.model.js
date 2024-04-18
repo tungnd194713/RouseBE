@@ -20,6 +20,10 @@ const moduleSchema = mongoose.Schema(
         ],
       },
     ],
+    video_duration: {
+      type: Number,
+      default: 0,
+    }
   },
   {
     timestamps: true,

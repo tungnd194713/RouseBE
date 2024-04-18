@@ -1,5 +1,5 @@
 const httpStatus = require('http-status');
-const { User, UserProfile, Job, JobEducation, CertificateSubjects, CollegeSubjects, JobRequirement, Subject, Certificate, Major, CandidateApply, Course } = require('../models');
+const { User, UserProfile, Job, JobEducation, CertificateSubjects, CollegeSubjects, JobRequirement, Subject, Certificate, Major, CandidateApply, Course, UserRoadMap } = require('../models');
 const ApiError = require('../utils/ApiError');
 
 function skillLevelCompare(requirementLevel, profileLevel) {
@@ -813,6 +813,8 @@ const getDetailJob = async (userId, jobId) => {
     obj.userProfile = uniqueUserProfiles;
   });
 
+  const isApplied = await CandidateApply.findOne({ job: jobId, user: userId });
+
 	return {
 		...job.toObject(),
 		date_start: job.date_start ? formatDate(job.date_start) : null,
@@ -830,24 +832,107 @@ const getDetailJob = async (userId, jobId) => {
     certificates,
     majorColleges,
     previewSkills,
-		needToLearnCourses
+		needToLearnCourses,
+    isApplied: isApplied ? true : false,
 	}
 }
 
-const applyJob = async (user_id, job_id, body) => {
-  const isApplied = await CandidateApply.findOne({ job: job_id, user: user_id });
+const applyJob = async (user_id, body) => {
+  const job = await Job.findById(body.job);
+  if (!job) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'Job not found');
+  }
+  const isApplied = await CandidateApply.findOne({ job: body.job, user: user_id });
   if (isApplied) {
     throw new ApiError(httpStatus.NOT_FOUND, 'Already applied');
   }
   return CandidateApply.create({
     ...body,
     user: user_id,
-    job: job_id
+    company: job.company_id
   })
 }
 
-const getAppliedJob = async (user_id) => {
-  return CandidateApply.find({ user: user_id }).populate('job');
+const getAppliedJobs = async (user_id, options, params) => {
+  const filter = {
+    user: user_id,
+  }
+  const queryOptions = {
+		...options,
+    populate: 'job'
+	}
+  if (params && params.status) {
+    filter.status = params.status;
+  }
+  return CandidateApply.paginate(filter, queryOptions);
+}
+
+const startJobEducation = async (userId, candidateApplyId) => {
+  const candidateApply = await CandidateApply.findById(candidateApplyId).populate('job');
+  if (!candidateApply) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'CV not found');
+  }
+  if (candidateApply.user.toString() !== userId.toString()) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'Not authorized');
+  }
+  if (candidateApply.education_applied !== 1) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'Unable to start education');
+  }
+  if (!candidateApply.education_courses || !candidateApply.education_courses.length) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'Unable to start education');
+  }
+  const currentCourse = await Course.findById(candidateApply.education_courses[0]);
+  const userRoadmap = {
+    title: candidateApply.job.title + ' (Lộ trình học)',
+    user: userId,
+    job: candidateApply.job.id,
+    current_course: candidateApply.education_courses[0],
+    current_module: currentCourse?.modules[0],
+    roadmap_milestone: candidateApply.education_courses.map((item) => {
+      return {
+        course: item,
+        is_skipped: false,
+        skippable: true,
+        progress: -0,
+        is_finished: false,
+      }
+    }),
+    applied_date: Date.now(),
+    is_finished: false,
+  };
+  const createdRoadmap = await UserRoadMap.create(userRoadmap);
+  if (!createdRoadmap) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'Something wrong');
+  }
+  candidateApply.status = 4;
+  await candidateApply.save()
+  return 'Education started';
+}
+
+const getCurrentEducation = async (userId) => {
+  const userRoadmap = await UserRoadMap.findOne({ user: userId, is_finished: false }).populate('current_course current_module roadmap_milestone.course').populate({
+    path: 'roadmap_milestone.course',
+    populate: {
+      path: 'modules',
+      model: 'Module',
+    },
+  });
+  if (!userRoadmap) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'Roadmap not found');
+  }
+  const job = await Job.findById(userRoadmap.job).select('id title');
+  if (!job) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'Job not found');
+  }
+  const jobEducation = await JobEducation.findOne({job: job.id});
+  if (!jobEducation) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'Job education not found');
+  }
+  return {
+    userRoadmap: userRoadmap.toObject(),
+    job: job.toObject(),
+    jobEducation: jobEducation.toObject()
+  }
 }
 
 const jobMatchingPoint = async (user_id, job_id) => {
@@ -906,5 +991,7 @@ module.exports = {
   suggestJobs,
 	getDetailJob,
   applyJob,
-  getAppliedJob,
+  getAppliedJobs,
+  startJobEducation,
+  getCurrentEducation
 };

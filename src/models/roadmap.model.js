@@ -14,6 +14,9 @@ const roadmapSchema = mongoose.Schema(
       type: String,
       trim: true,
     },
+    //job,
+    //courses,
+    //status,
     categoryId: {
       type: mongoose.Schema.Types.ObjectId,
       required: true,

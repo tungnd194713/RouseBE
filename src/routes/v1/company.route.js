@@ -17,6 +17,8 @@ router.get('/jobs/:id', auth(), companyController.getJobById);
 router.get('/candidate-applies/:userId', auth(), companyController.getUserCv);
 router.get('/candidate-applies/job/:id', auth(), companyController.getJobCandidateApplies);
 router.get('/candidate-applies/', auth(), companyController.getCandidateApplies);
+router.post('/candidate-applies/accept-education/:candidateId', auth(), companyController.acceptEducation);
+router.post('/candidate-applies/accept-interview/:candidateId', auth(), companyController.acceptInterview);
 router.get('/requirement-options', auth(), companyController.getRequirementOptions);
 router.delete('/jobs/:id', auth(), companyController.deleteJob);
 router.post('/seed-subject', companyController.seedSubject);

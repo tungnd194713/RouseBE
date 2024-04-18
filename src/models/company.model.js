@@ -50,6 +50,10 @@ const companySchema = new mongoose.Schema({
   },
   previous_status: Number,
   reason_deletion: String,
+  point_owned: {
+    type: Number,
+    default: 100,
+  }
 }, {
   timestamps: true,
 });

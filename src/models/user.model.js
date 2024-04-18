@@ -50,6 +50,10 @@ const userSchema = mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    point_owned: {
+      type: Number,
+      default: 0,
+    }
   },
   {
     timestamps: true,

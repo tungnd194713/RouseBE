@@ -81,6 +81,34 @@ const seedRoadmap = catchAsync(async (req, res) => {
   }
 });
 
+const getEducationRequests = catchAsync(async (req, res) => {
+  try {
+    const result = await roadmapService.getEducationRequests(req.query, req.body);
+    res.status(httpStatus.OK).send(result);
+  } catch (e) {
+    throw new ApiError(httpStatus.NOT_FOUND, e);
+  }
+});
+
+const getEducationCourses = catchAsync(async (req, res) => {
+  try {
+    const result = await roadmapService.getEducationCourses(req.params.jobEducationId);
+    res.status(httpStatus.OK).send(result);
+  } catch (e) {
+    throw new ApiError(httpStatus.NOT_FOUND, e);
+  }
+});
+
+const getCourseDetail = catchAsync(async (req, res) => {
+  try {
+    const result = await roadmapService.getCourseDetail(req.params.jobEducationId, req.params.courseId);
+    res.status(httpStatus.OK).send(result);
+  } catch (e) {
+    throw new ApiError(httpStatus.NOT_FOUND, e);
+  }
+});
+
+
 module.exports = {
   fetchCategories,
   fetchSpecCategories,
@@ -93,4 +121,7 @@ module.exports = {
   seedCategory,
   seedMilestones,
   seedRoadmap,
+  getEducationRequests,
+  getEducationCourses,
+  getCourseDetail,
 };

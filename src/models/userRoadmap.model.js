@@ -9,8 +9,14 @@ const userRoadmapSchema = mongoose.Schema(
       trim: true,
       required: true,
     },
-    user_id: {
+    user: {
       type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    },
+    job: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Job',
       required: true,
     },
     description: {
@@ -18,23 +24,9 @@ const userRoadmapSchema = mongoose.Schema(
       type: String,
       trim: true,
     },
-    categoryId: {
+    current_course: {
       type: mongoose.Schema.Types.ObjectId,
-      required: true,
-    },
-    subCategoryId: {
-      type: mongoose.Schema.Types.ObjectId,
-      required: true,
-    },
-    base_milestone: [
-      {
-        title: String,
-        order: Number,
-      },
-    ],
-    current_milestone: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Milestone',
+      ref: 'Course',
       // required: true,
     },
     current_module: {
@@ -44,61 +36,43 @@ const userRoadmapSchema = mongoose.Schema(
     },
     roadmap_milestone: [
       {
-        milestone: {
+        course: {
           type: mongoose.Schema.Types.ObjectId,
-          ref: 'Milestone',
+          ref: 'Course',
         },
         is_skipped: {
           type: Boolean,
-          required: true,
           default: false,
         },
         skippable: {
           type: Boolean,
-          required: true,
           default: true,
         },
         progress: {
           type: Number,
-          required: true,
           default: 0,
         },
-        modules: [
-          {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'Module',
-          },
-        ],
         is_finished: {
           type: Boolean,
-          required: true,
           default: false,
+        },
+        done_modules: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'Module',
         },
         finished_date: Date,
       },
     ],
+    progress: {
+      type: Number,
+      default: 0,
+    },
     applied_date: Date,
     is_finished: {
       type: Boolean,
-      required: true,
       default: false,
     },
     finished_date: Date,
-    roadmap_info: {
-      estimated_time: {
-        type: Number,
-      },
-      experience_level: {
-        type: String,
-        enum: ['Beginner', 'Intermediate', 'Advanced'],
-      },
-      skill_set: [
-        {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: 'SkillSet',
-        },
-      ],
-    },
   },
   {
     timestamps: true,

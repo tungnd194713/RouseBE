@@ -27,7 +27,15 @@ const courseSchema = mongoose.Schema(
 				type: String,
 				enum: ['Beginner', 'Intermediate', 'Advanced']
 			}
-		}]
+		}],
+    point_cost: {
+      type: Number,
+      default: 100,
+    },
+    estimated_time: {
+      type: Number,
+      required: true,
+    }
   },
   {
     timestamps: true,
