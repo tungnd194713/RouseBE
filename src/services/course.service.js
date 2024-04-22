@@ -109,7 +109,30 @@ const getCourses = async (filter, options) => {
 		...options,
 		populate: 'skill_tags.skill',
 	}
-	const courses = await Course.paginate(filter, queryOption);
+  const filterOption = {}
+  if (filter.level) {
+    filterOption['skill_tags'] = {
+      $elemMatch: {
+        'level': filter.level
+      }
+    }
+  }
+  if (filter.skillId) {
+    filterOption['skill_tags'] = {
+      $elemMatch: {
+        'skill': filter.skillId,
+      }
+    }
+  }
+  if (filter.skillId && filter.level) {
+    filterOption['skill_tags'] = {
+      $elemMatch: {
+        'skill': filter.skillId,
+        'level': filter.level
+      }
+    }
+  }
+	const courses = await Course.paginate(filterOption, queryOption);
 	return courses;
 }
 
@@ -246,8 +269,8 @@ const seedLearningData = async () => {
 			],
 		},
 	];
-	
-	
+
+
 	Module.insertMany(modulesData)
   .then(modules => {
     // Create course

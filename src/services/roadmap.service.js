@@ -2,7 +2,8 @@
 const httpStatus = require('http-status');
 const mongoose = require('mongoose');
 const ApiError = require('../utils/ApiError');
-const { RoadMap, Milestone, Category, SpecCategory, RoadmapTemplate, UserRoadMap, ModuleProgress, JobEducation, Course } = require('../models');
+const { RoadMap, Milestone, Category, SpecCategory, RoadmapTemplate, UserRoadMap, ModuleProgress, JobEducation, Course, JobRequirement, CertificateSubjects, CollegeSubjects } = require('../models');
+const { convertRequirements } = require('../helpers/roadmap.helper');
 
 async function findRoadmap(categoryId, subCategoryId, mastery) {
   const query = {};
@@ -163,330 +164,9 @@ const completeMilestone = async (milestone_id, user_id) => {
   }
 };
 
-const seedCategory = async () => {
-  const categoryData = [
-    {
-      title: 'Software Development',
-      subcategories: [
-        { title: 'Frontend Development' },
-        { title: 'Backend Development' },
-        { title: 'Mobile App Development' },
-      ],
-    },
-    {
-      title: 'Data Science',
-      subcategories: [{ title: 'Machine Learning' }, { title: 'Data Analytics' }, { title: 'Big Data' }],
-    },
-    {
-      title: 'Digital Marketing',
-      subcategories: [{ title: 'Social Media Marketing' }, { title: 'SEO' }, { title: 'Content Marketing' }],
-    },
-    {
-      title: 'Graphic Design',
-      subcategories: [{ title: 'Web Design' }, { title: 'UI/UX Design' }, { title: 'Print Design' }],
-    },
-    // Add more categories and their corresponding subcategories as needed
-  ];
-
-  // Clear existing data
-  await Category.deleteMany({});
-  await SpecCategory.deleteMany({});
-
-  // Create an array to hold all category and subcategory documents
-  const creatingCategories = [];
-  const creatingSubCategories = [];
-
-  // Seed new data for categories and subcategories
-  // eslint-disable-next-line no-restricted-syntax
-  for (const category of categoryData) {
-    const createdCategory = { title: category.title };
-    creatingCategories.push(createdCategory);
-  }
-
-  await Category.insertMany(creatingCategories);
-
-  const createdCategories = await Category.find({});
-
-  // eslint-disable-next-line no-restricted-syntax
-  for (const seedingCategory of categoryData) {
-    const index = categoryData.findIndex((x) => x.title === seedingCategory.title);
-    // eslint-disable-next-line no-restricted-syntax
-    for (const seedingSubCategory of seedingCategory.subcategories) {
-      const subCate = { title: seedingSubCategory.title, category_id: createdCategories[index]._id };
-      creatingSubCategories.push(subCate);
-    }
-  }
-  await SpecCategory.insertMany(creatingSubCategories);
-};
-
-const seedMilestones = async () => {
-  // const softwareDevelopmentMainGoal = new mongoose.Types.ObjectId('659ec171bf031a2f14db42a2');
-  // const frontendDevelopmentSpecificGoal = new mongoose.Types.ObjectId('659ec171bf031a2f14db42a8');
-  // const frontendEngineerRoadmapMilestones = [
-  //   {
-  //     title: 'Learn HTML and CSS',
-  //     description: 'Understand the basics of HTML and CSS for web development.',
-  //     estimated_time: { name: '2 weeks', value: 336 },
-  //     experience_level: ['Beginner'],
-  //     main_goal: [softwareDevelopmentMainGoal],
-  //     specific_goal: [frontendDevelopmentSpecificGoal],
-  //     base_milestone_id: new mongoose.Types.ObjectId('659ec80ee3638572709ba46d'),
-  //   },
-  //   {
-  //     title: 'Master JavaScript',
-  //     description: 'Deepen your knowledge of JavaScript, including ES6+ features.',
-  //     estimated_time: { name: '4 weeks', value: 672 },
-  //     experience_level: ['Beginner'],
-  //     main_goal: [softwareDevelopmentMainGoal],
-  //     specific_goal: [frontendDevelopmentSpecificGoal],
-  //     base_milestone_id: new mongoose.Types.ObjectId('659ec80ee3638572709ba46e'),
-  //   },
-  //   {
-  //     title: 'Build React Applications',
-  //     description: 'Learn and apply React for building modern user interfaces.',
-  //     estimated_time: { name: '6 weeks', value: 1008 },
-  //     experience_level: ['Beginner'],
-  //     main_goal: [softwareDevelopmentMainGoal],
-  //     specific_goal: [frontendDevelopmentSpecificGoal],
-  //     base_milestone_id: new mongoose.Types.ObjectId('659ec80ee3638572709ba46f'),
-  //   },
-  //   {
-  //     title: 'Use Build Tools',
-  //     description: 'Explore and use build tools like Webpack for optimizing your code.',
-  //     estimated_time: { name: '2 weeks', value: 336 },
-  //     experience_level: ['Beginner', 'Intermediate'],
-  //     main_goal: [softwareDevelopmentMainGoal],
-  //     specific_goal: [frontendDevelopmentSpecificGoal],
-  //     base_milestone_id: new mongoose.Types.ObjectId('659ec80ee3638572709ba470'),
-  //   },
-  //   {
-  //     title: 'Version Control Best Practices',
-  //     description: 'Adopt best practices for version control using Git.',
-  //     estimated_time: { name: '2 weeks', value: 336 },
-  //     experience_level: ['Beginner', 'Intermediate'],
-  //     main_goal: [softwareDevelopmentMainGoal],
-  //     specific_goal: [frontendDevelopmentSpecificGoal],
-  //     base_milestone_id: new mongoose.Types.ObjectId('659ec80ee3638572709ba471'),
-  //   },
-  // ];
-
-  // Sample MainGoal data
-  const dataAnalyticsMainGoal = new mongoose.Types.ObjectId('659ec171bf031a2f14db42a3');
-
-  // Sample SpecificGoal data
-  const dataEngineeringSpecificGoal = new mongoose.Types.ObjectId('659ec171bf031a2f14db42ac');
-
-  // Sample Milestones based on Data Analytics Engineer Roadmap
-  const dataAnalyticsEngineerRoadmapMilestones = [
-    {
-      title: 'Learn SQL',
-      description: 'Master SQL for querying and managing relational databases.',
-      estimated_time: { name: '3 weeks', value: 504 },
-      experience_level: ['Beginner', 'Intermediate'],
-      main_goal: [dataAnalyticsMainGoal],
-      specific_goal: [dataEngineeringSpecificGoal],
-      base_milestone_id: new mongoose.Types.ObjectId('659ec80ee3638572709ba477'),
-    },
-    {
-      title: 'Python for Data Analytics',
-      description: 'Use Python for data analysis and manipulation.',
-      estimated_time: { name: '4 weeks', value: 672 },
-      experience_level: ['Beginner', 'Intermediate'],
-      main_goal: [dataAnalyticsMainGoal],
-      specific_goal: [dataEngineeringSpecificGoal],
-      base_milestone_id: new mongoose.Types.ObjectId('659ec80ee3638572709ba478'),
-    },
-    {
-      title: 'Data Visualization',
-      description: 'Create compelling visualizations to communicate insights.',
-      estimated_time: { name: '6 weeks', value: 1008 },
-      experience_level: ['Beginner', 'Intermediate'],
-      main_goal: [dataAnalyticsMainGoal],
-      specific_goal: [dataEngineeringSpecificGoal],
-      base_milestone_id: new mongoose.Types.ObjectId('659ec80ee3638572709ba479'),
-    },
-    {
-      title: 'Machine Learning Basics',
-      description: 'Understand the fundamentals of machine learning.',
-      estimated_time: { name: '3 weeks', value: 504 },
-      experience_level: ['Beginner', 'Intermediate'],
-      main_goal: [dataAnalyticsMainGoal],
-      specific_goal: [dataEngineeringSpecificGoal],
-      base_milestone_id: new mongoose.Types.ObjectId('659ec80ee3638572709ba47a'),
-    },
-    {
-      title: 'Big Data Technologies',
-      description: 'Explore big data technologies like Apache Hadoop and Spark.',
-      estimated_time: { name: '4 weeks', value: 672 },
-      experience_level: ['Beginner', 'Intermediate'],
-      main_goal: [dataAnalyticsMainGoal],
-      specific_goal: [dataEngineeringSpecificGoal],
-      base_milestone_id: new mongoose.Types.ObjectId('659ec80ee3638572709ba47b'),
-    },
-    {
-      title: 'Data Visualization and Processing',
-      description: 'Visualize Data.',
-      estimated_time: { name: '4 weeks', value: 672 },
-      experience_level: ['Advanced'],
-      main_goal: [dataAnalyticsMainGoal],
-      specific_goal: [dataEngineeringSpecificGoal],
-      base_milestone_id: new mongoose.Types.ObjectId('659ec80ee3638572709ba47b'),
-    },
-    // Add more milestones as needed
-  ];
-
-  // Insert sample data into the database
-  Milestone.insertMany(dataAnalyticsEngineerRoadmapMilestones);
-};
-
-const seedRoadmap = async () => {
-  const softwareDevelopmentMainGoal = new mongoose.Types.ObjectId('659ec171bf031a2f14db42a2');
-  const frontendDevelopmentSpecificGoal = new mongoose.Types.ObjectId('659ec171bf031a2f14db42a8');
-  const backendDevelopmentSpecificGoal = new mongoose.Types.ObjectId('659ec171bf031a2f14db42a9');
-  const dataScienceMainGoal = new mongoose.Types.ObjectId('659ec171bf031a2f14db42a3');
-  const dataAnalyticsSpecificGoal = new mongoose.Types.ObjectId('659ec171bf031a2f14db42ac');
-  const bigDataGoal = new mongoose.Types.ObjectId('659ec171bf031a2f14db42ad');
-
-  const roadmaps = [
-    {
-      title: 'Frontend Dev for Beginner',
-      description: 'Frontend Dev for Beginner',
-      categoryId: softwareDevelopmentMainGoal,
-      subCategoryId: frontendDevelopmentSpecificGoal,
-      base_milestone: [
-        {
-          _id: new mongoose.Types.ObjectId(),
-          title: 'Base HTML/CSS/JS',
-          order: 1,
-        },
-        {
-          _id: new mongoose.Types.ObjectId(),
-          title: 'Responsive Web Design',
-          order: 2,
-        },
-        {
-          _id: new mongoose.Types.ObjectId(),
-          title: 'Version Control',
-          order: 3,
-        },
-        {
-          _id: new mongoose.Types.ObjectId(),
-          title: 'Basic Understanding of Web Accessibility',
-          order: 4,
-        },
-        {
-          _id: new mongoose.Types.ObjectId(),
-          title: 'Frameworks/Libraries',
-          order: 5,
-        },
-      ],
-    },
-    {
-      title: 'Backend Dev for Beginner',
-      description: 'Backend Dev for Beginner',
-      categoryId: softwareDevelopmentMainGoal,
-      subCategoryId: backendDevelopmentSpecificGoal,
-      base_milestone: [
-        {
-          _id: new mongoose.Types.ObjectId(),
-          title: 'Basic Understanding of How the Internet Works',
-          order: 1,
-        },
-        {
-          _id: new mongoose.Types.ObjectId(),
-          title: 'Basic Understanding of Databases',
-          order: 2,
-        },
-        {
-          _id: new mongoose.Types.ObjectId(),
-          title: 'Server-Side Programming Language',
-          order: 3,
-        },
-        {
-          _id: new mongoose.Types.ObjectId(),
-          title: 'Web Security',
-          order: 4,
-        },
-        {
-          _id: new mongoose.Types.ObjectId(),
-          title: 'Frameworks/Libraries',
-          order: 5,
-        },
-      ],
-    },
-    {
-      title: 'Backend Dev for Beginner',
-      description: 'Backend Dev for Beginner',
-      categoryId: dataScienceMainGoal,
-      subCategoryId: dataAnalyticsSpecificGoal,
-      base_milestone: [
-        {
-          _id: new mongoose.Types.ObjectId(),
-          title: 'Foundational Skills',
-          order: 1,
-        },
-        {
-          _id: new mongoose.Types.ObjectId(),
-          title: 'Programming Languages',
-          order: 2,
-        },
-        {
-          _id: new mongoose.Types.ObjectId(),
-          title: 'Explore Data Analysis Libraries',
-          order: 3,
-        },
-        {
-          _id: new mongoose.Types.ObjectId(),
-          title: 'Simple Visualizations',
-          order: 4,
-        },
-        {
-          _id: new mongoose.Types.ObjectId(),
-          title: 'Understand Basic Statistics',
-          order: 5,
-        },
-      ],
-    },
-    {
-      title: 'Backend Dev for Beginner',
-      description: 'Backend Dev for Beginner',
-      categoryId: dataScienceMainGoal,
-      subCategoryId: bigDataGoal,
-      base_milestone: [
-        {
-          _id: new mongoose.Types.ObjectId(),
-          title: 'Understand the Basics',
-          order: 1,
-        },
-        {
-          _id: new mongoose.Types.ObjectId(),
-          title: 'Data Processing',
-          order: 2,
-        },
-        {
-          _id: new mongoose.Types.ObjectId(),
-          title: 'Cloud Services',
-          order: 3,
-        },
-        {
-          _id: new mongoose.Types.ObjectId(),
-          title: 'Data Save Place',
-          order: 4,
-        },
-        {
-          _id: new mongoose.Types.ObjectId(),
-          title: 'Performance Optimization',
-          order: 5,
-        },
-      ],
-    },
-  ];
-
-  RoadmapTemplate.insertMany(roadmaps);
-};
-
-
 const getEducationRequests = async (options, params) => {
+  const certificateObjects = await CertificateSubjects.find({}).populate('subject_objects.subject');
+  const majorObjects = await CollegeSubjects.find({}).populate('subject_objects.subject');
   const filter = {}
   const queryOptions = {
 		...options,
@@ -495,28 +175,97 @@ const getEducationRequests = async (options, params) => {
   if (params && params.status) {
     filter.status = params.status;
   }
-  return JobEducation.paginate(filter, queryOptions);
+  const result = await JobEducation.paginate(filter, queryOptions);
+  if (!result) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'Request not found');
+  }
+  const jobEducations = result.results;
+  const jobIds = jobEducations.map((item) => item.job.id);
+  const jobRequirements = await JobRequirement.find({job: { $in: jobIds }}).populate('skills majors certificates colleges');
+  const newResults = jobEducations.map((item) => {
+    const requirements = [];
+    jobRequirements.forEach((req) => {
+      if (req.job.toString() === item.job.id.toString()) {
+        requirements.push(req);
+      }
+    })
+    const convertedRequirements = convertRequirements(requirements, certificateObjects, majorObjects);
+    return {
+      ...item.toObject(),
+      requirements,
+      convertedRequirements
+    }
+  })
+
+  result.results = newResults;
+  return result;
 }
 
 const getEducationCourses = async (jobEducationId) => {
-  const jobEducation = await JobEducation.findById(jobEducationId).populate('job company courses');
+  const certificateObjects = await CertificateSubjects.find({}).populate('subject_objects.subject');
+  const majorObjects = await CollegeSubjects.find({}).populate('subject_objects.subject');
+  const jobEducation = await JobEducation.findById(jobEducationId).populate('job company courses').populate({ path: 'courses', populate: { path: 'skill_tags.skill' } });
   if (!jobEducation) {
     throw new ApiError(httpStatus.NOT_FOUND, 'Request not found');
   }
+  const jobRequirement = await JobRequirement.find({ job: jobEducation.job }).populate('skills majors certificates colleges');
+  const convertedRequirements = convertRequirements(jobRequirement, certificateObjects, majorObjects);
 
-  return jobEducation;
+  return {
+    ...jobEducation.toObject(),
+    convertedRequirements,
+  };
+}
+
+const addExistingEducationCourse = async (jobEducationId, courseId) => {
+  const jobEducation = await JobEducation.findById(jobEducationId);
+  if (!jobEducation) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'Request not found');
+  }
+  const course = await Course.findById(courseId);
+  if (!course) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'Course not found');
+  }
+  const isAdded = jobEducation.courses.find((item) => item.toString() === courseId.toString());
+  if (isAdded) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'Course already added');
+  }
+  await JobEducation.updateOne(
+    { _id: jobEducationId },
+    { $push: { courses: courseId } },
+  );
+  return courseId;
+}
+
+const removeCourseFromRoadmap = async (jobEducationId, courseId) => {
+  const jobEducation = await JobEducation.findById(jobEducationId);
+  if (!jobEducation) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'Request not found');
+  }
+  const course = await Course.findById(courseId);
+  if (!course) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'Course not found');
+  }
+  const existing = jobEducation.courses.find((item) => item.toString() === courseId.toString());
+  if (!existing) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'Course not found');
+  }
+  await JobEducation.updateOne(
+    { _id: jobEducationId },
+    { $pull: { courses: courseId } },
+  );
+  return courseId;
 }
 
 const getCourseDetail = async (jobEducationId, courseId) => {
   const jobEducation = await JobEducation.findById(jobEducationId).populate('job company');
-  if (!jobEducation) {
-    throw new ApiError(httpStatus.NOT_FOUND, 'Request not found');
-  }
+
+  if (!jobEducation) throw new ApiError(httpStatus.NOT_FOUND, 'Request not found');
+
   const hasCourse = jobEducation.courses.find((item) => item.toString() === courseId.toString());
-  if (!hasCourse) {
-    throw new ApiError(httpStatus.NOT_FOUND, 'Course not found');
-  }
-  const course = await Course.findById(courseId);
+  if (!hasCourse) throw new ApiError(httpStatus.NOT_FOUND, 'Course not found');
+
+  const course = await Course.findById(courseId).populate('modules skill_tags.skill');
   return course;
 }
 
@@ -529,11 +278,10 @@ module.exports = {
   getUserRoadmap,
   getMilestoneModuleProgress,
   completeMilestone,
-  seedCategory,
-  seedMilestones,
-  seedRoadmap,
   applyRoadmap,
   getEducationRequests,
   getEducationCourses,
   getCourseDetail,
+  addExistingEducationCourse,
+  removeCourseFromRoadmap,
 };

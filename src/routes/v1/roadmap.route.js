@@ -19,5 +19,7 @@ router.post('/seed-roadmap', roadmapController.seedRoadmap);
 router.post('/education-requests', roadmapController.getEducationRequests);
 router.get('/education-requests/:jobEducationId', roadmapController.getEducationCourses);
 router.get('/education-requests/:jobEducationId/courses/:courseId', roadmapController.getCourseDetail);
+router.post('/education-requests/:jobEducationId/courses/:courseId', roadmapController.addExistingEducationCourse);
+router.delete('/education-requests/:jobEducationId/courses/:courseId', roadmapController.removeCourseFromRoadmap);
 
 module.exports = router;

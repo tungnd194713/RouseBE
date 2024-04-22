@@ -108,6 +108,23 @@ const getCourseDetail = catchAsync(async (req, res) => {
   }
 });
 
+const addExistingEducationCourse = catchAsync(async (req, res) => {
+  try {
+    const result = await roadmapService.addExistingEducationCourse(req.params.jobEducationId, req.params.courseId);
+    res.status(httpStatus.OK).send(result);
+  } catch (e) {
+    throw new ApiError(httpStatus.NOT_FOUND, e);
+  }
+});
+
+const removeCourseFromRoadmap = catchAsync(async (req, res) => {
+  try {
+    const result = await roadmapService.removeCourseFromRoadmap(req.params.jobEducationId, req.params.courseId);
+    res.status(httpStatus.OK).send(result);
+  } catch (e) {
+    throw new ApiError(httpStatus.NOT_FOUND, e);
+  }
+});
 
 module.exports = {
   fetchCategories,
@@ -124,4 +141,6 @@ module.exports = {
   getEducationRequests,
   getEducationCourses,
   getCourseDetail,
+  addExistingEducationCourse,
+  removeCourseFromRoadmap
 };

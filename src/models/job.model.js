@@ -118,6 +118,12 @@ const jobSchema = new mongoose.Schema({
   timestamps: true,
 });
 
+jobSchema.virtual('jobRequirements', {
+  ref: 'JobRequirement',
+  localField: '_id',
+  foreignField: 'job',
+});
+
 // add plugin that converts mongoose to json
 jobSchema.plugin(toJSON);
 jobSchema.plugin(paginate);
