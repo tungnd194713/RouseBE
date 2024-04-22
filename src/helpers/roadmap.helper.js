@@ -12,6 +12,24 @@ function getLevelIndex(level) {
   }
 }
 
+function skillLevelCompare(requirementLevel, profileLevel) {
+  if (requirementLevel == 'Advanced') {
+      if (profileLevel == 'Advanced') return 1;
+      if (profileLevel == 'Intermediate') return 0;
+      if (profileLevel == 'Beginner') return 0;
+  }
+  if (requirementLevel == 'Intermediate') {
+      if (profileLevel == 'Advanced') return 1;
+      if (profileLevel == 'Intermediate') return 1;
+      if (profileLevel == 'Beginner') return 0;
+  }
+  if (requirementLevel == 'Beginner') {
+      if (profileLevel == 'Advanced') return 0;
+      if (profileLevel == 'Intermediate') return 0;
+      if (profileLevel == 'Beginner') return 1;
+  }
+}
+
 function removeDuplicates(array) {
   const map = new Map();
 
@@ -83,4 +101,5 @@ const convertRequirements = (requirements, certificateObjects, majorObjects) => 
 
 module.exports = {
   convertRequirements,
+  skillLevelCompare,
 }

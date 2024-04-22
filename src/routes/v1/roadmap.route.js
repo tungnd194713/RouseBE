@@ -20,11 +20,15 @@ router.post('/seed-milestone', roadmapController.seedMilestones);
 router.post('/seed-roadmap', roadmapController.seedRoadmap);
 router.post('/education-requests', auth(), roadmapController.getEducationRequests);
 router.get('/education-requests/:jobEducationId', auth(), roadmapController.getEducationCourses);
+router.get('/education-requests/:jobEducationId/check', auth(), roadmapController.checkEducationRoadmap);
+router.get('/education-requests/:jobEducationId/send', auth(), roadmapController.sendEducationRoadmap);
 router.get('/education-requests/:jobEducationId/courses/:courseId', auth(), roadmapController.getCourseDetail);
 router.post('/education-requests/:jobEducationId/courses/create', upload.none(), auth(), roadmapController.createEducationCourse);
 router.post('/education-requests/:jobEducationId/courses/:courseId', auth(), roadmapController.addExistingEducationCourse);
 router.delete('/education-requests/:jobEducationId/courses/:courseId', auth(), roadmapController.removeCourseFromRoadmap);
 router.post('/education-requests/:jobEducationId/courses/:courseId/modules/create', upload.none(), auth(), roadmapController.createEducationModule);
 router.delete('/education-requests/:jobEducationId/courses/:courseId/modules/:moduleId', auth(), roadmapController.removeEducationModuleFromCourse);
+router.get('/education-requests/:jobEducationId/courses/:courseId/modules/:moduleId', auth(), roadmapController.getEducationModule);
+router.put('/education-requests/:jobEducationId/courses/:courseId/modules/:moduleId', auth(), roadmapController.updateEducationModule);
 
 module.exports = router;

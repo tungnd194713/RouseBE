@@ -1,5 +1,7 @@
 const express = require('express');
 const auth = require('../../middlewares/auth');
+const multer  = require('multer')
+const upload = multer()
 const courseController = require('../../controllers/course.controller');
 const moduleController = require('../../controllers/module.controller');
 // const { validate } = require('../../models/course.model');
@@ -24,6 +26,7 @@ router.post('/list', auth(), courseController.getCourses);
 router.post('/seed-learning-data/', auth(), courseController.seedLearningData);
 router.post('/:courseId/add-module', auth(), courseController.addModuleToCourse);
 router.post('/:courseId/', auth(), courseController.findCourseById);
+router.put('/:courseId/', upload.none(), auth(), courseController.updateCourseInfo);
 // router.post('/module/:module_id/discussion/:discussion_id/reply', courseController.updateModuleProgress);
 
 module.exports = router;

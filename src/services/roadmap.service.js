@@ -3,7 +3,7 @@ const httpStatus = require('http-status');
 const mongoose = require('mongoose');
 const ApiError = require('../utils/ApiError');
 const { RoadMap, Milestone, Category, SpecCategory, RoadmapTemplate, UserRoadMap, ModuleProgress, JobEducation, Course, JobRequirement, CertificateSubjects, CollegeSubjects, Module } = require('../models');
-const { convertRequirements } = require('../helpers/roadmap.helper');
+const { convertRequirements, skillLevelCompare } = require('../helpers/roadmap.helper');
 
 async function findRoadmap(categoryId, subCategoryId, mastery) {
   const query = {};
@@ -217,6 +217,51 @@ const getEducationCourses = async (jobEducationId) => {
   };
 }
 
+const checkEducationRoadmap = async (jobEducationId) => {
+  const certificateObjects = await CertificateSubjects.find({}).populate('subject_objects.subject');
+  const majorObjects = await CollegeSubjects.find({}).populate('subject_objects.subject');
+  const jobEducation = await JobEducation.findById(jobEducationId).populate('job company courses').populate({ path: 'courses', populate: { path: 'skill_tags.skill' } });
+  if (!jobEducation) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'Request not found');
+  }
+  const jobRequirement = await JobRequirement.find({ job: jobEducation.job }).populate('skills majors certificates colleges');
+  const convertedRequirements = convertRequirements(jobRequirement, certificateObjects, majorObjects);
+  const courseTags = jobEducation.courses.map((item) => item.skill_tags).flat().map((item) => {
+    return {
+      _id: item.skill._id || item.skill.id,
+      level: item.level,
+      skill: item.skill.name,
+    }
+  })
+
+  let matchedPoint = 0;
+  convertedRequirements.forEach((requirement) => {
+    if (courseTags.find((item) => item._id.toString() === requirement._id.toString() && skillLevelCompare(requirement.level, item.level))) {
+      matchedPoint += 1;
+    }
+  })
+
+  if (matchedPoint === convertedRequirements.length) {
+    return true
+  }
+  return false;
+}
+
+const sendEducationRoadmap = async (jobEducationId) => {
+  const jobEducation = await JobEducation.findById(jobEducationId);
+  if (!jobEducation) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'Request not found');
+  }
+
+  if (jobEducation.status === 1) {
+    jobEducation.status = 2;
+  } else if (jobEducation.status === 2) {
+    jobEducation.status = 1;
+  }
+  await jobEducation.save();
+  return "Request sent";
+}
+
 const createEducationCourse = async (jobEducationId, body) => {
   const jobEducation = await JobEducation.findById(jobEducationId);
   if (!jobEducation) {
@@ -333,6 +378,47 @@ const removeEducationModuleFromCourse = async (jobEducationId, courseId, moduleI
 	return moduleId;
 }
 
+const getEducationModule = async (jobEducationId, courseId, moduleId) => {
+	const jobEducation = await JobEducation.findById(jobEducationId).populate('job company');
+
+  if (!jobEducation) throw new ApiError(httpStatus.NOT_FOUND, 'Request not found');
+
+  const course = await Course.findById(courseId);
+
+	if (!course) throw new ApiError(httpStatus.NOT_FOUND, 'Course not found');
+
+	const createdModule = await Module.findById(moduleId);
+	if (!createdModule) throw new ApiError(httpStatus.NOT_FOUND, 'Module not found');
+
+	return {
+    ...jobEducation.toObject(),
+    course: course.toObject(),
+    module: createdModule.toObject(),
+  };
+}
+
+const updateEducationModule = async (jobEducationId, courseId, moduleId, body) => {
+  const jobEducation = await JobEducation.findById(jobEducationId).populate('job company');
+
+  if (!jobEducation) throw new ApiError(httpStatus.NOT_FOUND, 'Request not found');
+
+  const course = await Course.findById(courseId);
+
+	if (!course) throw new ApiError(httpStatus.NOT_FOUND, 'Course not found');
+
+	const module = await Module.findById(moduleId);
+	if (!module) throw new ApiError(httpStatus.NOT_FOUND, 'Module not found');
+
+  module.name = body.name;
+  module.description = body.description;
+  module.video = body.video;
+  module.video_duration = body.video_duration;
+  module.check_point_quizzes = body.check_point_quizzes;
+  await module.save();
+
+  return 'Save success';
+}
+
 module.exports = {
   findRoadmap,
   buildRoadmap,
@@ -350,5 +436,9 @@ module.exports = {
   removeCourseFromRoadmap,
 	createEducationModule,
 	removeEducationModuleFromCourse,
-	createEducationCourse
+	createEducationCourse,
+  getEducationModule,
+  updateEducationModule,
+  checkEducationRoadmap,
+  sendEducationRoadmap,
 };

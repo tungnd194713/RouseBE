@@ -145,6 +145,19 @@ const createCourse = async (body) => {
 	return Course.create(data);
 }
 
+const updateCourseInfo = async (courseId, body) => {
+	const course = await Course.findById(courseId);
+
+  if (!course) throw new ApiError(httpStatus.NOT_FOUND, 'Course not found');
+  course.title = body.title;
+  course.description = body.description;
+  course.point_cost = body.point_cost;
+  course.estimated_time = body.estimated_time;
+
+	await course.save()
+  return 'Update success';
+}
+
 const addModuleToCourse = async (courseId, body) => {
 	try {
 		const course = await Course.findById(courseId);
@@ -301,4 +314,5 @@ module.exports = {
 	getCourses,
 	findCourseById,
 	seedLearningData,
+  updateCourseInfo,
 };
