@@ -117,12 +117,39 @@ const addExistingEducationCourse = catchAsync(async (req, res) => {
   }
 });
 
+const createEducationCourse = catchAsync(async (req, res) => {
+  try {
+    const result = await roadmapService.createEducationCourse(req.params.jobEducationId, req.body);
+    res.status(httpStatus.OK).send(result);
+  } catch (e) {
+    throw new ApiError(httpStatus.NOT_FOUND, e);
+  }
+});
+
 const removeCourseFromRoadmap = catchAsync(async (req, res) => {
   try {
     const result = await roadmapService.removeCourseFromRoadmap(req.params.jobEducationId, req.params.courseId);
     res.status(httpStatus.OK).send(result);
   } catch (e) {
     throw new ApiError(httpStatus.NOT_FOUND, e);
+  }
+});
+
+const createEducationModule = catchAsync(async (req, res) => {
+  try {
+    const result = await roadmapService.createEducationModule(req.params.jobEducationId, req.params.courseId, req.body);
+    res.status(httpStatus.OK).send(result);
+  } catch (e) {
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, e);
+  }
+});
+
+const removeEducationModuleFromCourse = catchAsync(async (req, res) => {
+  try {
+    const result = await roadmapService.removeEducationModuleFromCourse(req.params.jobEducationId, req.params.courseId, req.params.moduleId);
+    res.status(httpStatus.OK).send(result);
+  } catch (e) {
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, e);
   }
 });
 
@@ -142,5 +169,8 @@ module.exports = {
   getEducationCourses,
   getCourseDetail,
   addExistingEducationCourse,
-  removeCourseFromRoadmap
+  removeCourseFromRoadmap,
+	createEducationModule,
+	removeEducationModuleFromCourse,
+	createEducationCourse
 };

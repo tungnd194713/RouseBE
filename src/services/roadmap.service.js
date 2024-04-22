@@ -2,7 +2,7 @@
 const httpStatus = require('http-status');
 const mongoose = require('mongoose');
 const ApiError = require('../utils/ApiError');
-const { RoadMap, Milestone, Category, SpecCategory, RoadmapTemplate, UserRoadMap, ModuleProgress, JobEducation, Course, JobRequirement, CertificateSubjects, CollegeSubjects } = require('../models');
+const { RoadMap, Milestone, Category, SpecCategory, RoadmapTemplate, UserRoadMap, ModuleProgress, JobEducation, Course, JobRequirement, CertificateSubjects, CollegeSubjects, Module } = require('../models');
 const { convertRequirements } = require('../helpers/roadmap.helper');
 
 async function findRoadmap(categoryId, subCategoryId, mastery) {
@@ -217,6 +217,25 @@ const getEducationCourses = async (jobEducationId) => {
   };
 }
 
+const createEducationCourse = async (jobEducationId, body) => {
+  const jobEducation = await JobEducation.findById(jobEducationId);
+  if (!jobEducation) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'Request not found');
+  }
+  const course = await Course.create({
+		...body,
+		skill_tags: JSON.parse(body.tags),
+	});
+  if (!course) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'Course not found');
+  }
+  await JobEducation.updateOne(
+    { _id: jobEducationId },
+    { $push: { courses: course.id || course._id } },
+  );
+  return course;
+}
+
 const addExistingEducationCourse = async (jobEducationId, courseId) => {
   const jobEducation = await JobEducation.findById(jobEducationId);
   if (!jobEducation) {
@@ -266,7 +285,52 @@ const getCourseDetail = async (jobEducationId, courseId) => {
   if (!hasCourse) throw new ApiError(httpStatus.NOT_FOUND, 'Course not found');
 
   const course = await Course.findById(courseId).populate('modules skill_tags.skill');
-  return course;
+  return {
+		...jobEducation.toObject(),
+		...course.toObject(),
+	};
+}
+
+const createEducationModule = async (jobEducationId, courseId, body) => {
+	const jobEducation = await JobEducation.findById(jobEducationId);
+
+  if (!jobEducation) throw new ApiError(httpStatus.NOT_FOUND, 'Request not found');
+
+  const course = await Course.findById(courseId);
+
+	if (!course) throw new ApiError(httpStatus.NOT_FOUND, 'Course not found');
+
+	const createdModule = await Module.create(body);
+	if (!createdModule) throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'Create failed');
+
+	await Course.updateOne(
+    { _id: courseId },
+    { $push: { modules: createdModule.id || createdModule._id } },
+  );
+
+	return createdModule;
+}
+
+const removeEducationModuleFromCourse = async (jobEducationId, courseId, moduleId) => {
+	const jobEducation = await JobEducation.findById(jobEducationId);
+
+  if (!jobEducation) throw new ApiError(httpStatus.NOT_FOUND, 'Request not found');
+
+  const course = await Course.findById(courseId);
+
+	if (!course) throw new ApiError(httpStatus.NOT_FOUND, 'Course not found');
+
+	const module = await Module.findById(moduleId);
+	if (!module) throw new ApiError(httpStatus.NOT_FOUND, 'Module not found');
+
+	await Course.updateOne(
+    { _id: courseId },
+    { $pull: { modules: module.id || module._id } },
+  );
+
+	await module.remove();
+
+	return moduleId;
 }
 
 module.exports = {
@@ -284,4 +348,7 @@ module.exports = {
   getCourseDetail,
   addExistingEducationCourse,
   removeCourseFromRoadmap,
+	createEducationModule,
+	removeEducationModuleFromCourse,
+	createEducationCourse
 };
