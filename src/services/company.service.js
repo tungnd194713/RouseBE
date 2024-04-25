@@ -169,7 +169,7 @@ const createJob = async (company_id, data) => {
 }
 
 const getJobs = async (company_id, params) => {
-	let jobs = await Job.find({company_id});
+	let jobs = await Job.find({company_id}).populate('candidateApplies');
 	const jobEducations = await JobEducation.find({company: company_id});
 	const total = await Job.countDocuments({});
 	jobs = jobs.map(job => {
@@ -180,6 +180,8 @@ const getJobs = async (company_id, params) => {
 				date_end: job.date_start ? addMonthsToDate(job.date_start, job.display_month) : null,
 				max_education_month: education ? education.max_education_month : null,
 				scholarship: education ? education.scholarship : null,
+        education_status: education ? education.status : null,
+        candidate_applies: job.candidateApplies,
 				id: job._id,
 		};
 	});
@@ -201,6 +203,7 @@ const getJobById = async (id) => {
     max_education_month: education ? education.max_education_month : null,
     scholarship: education ? education.scholarship : null,
     id: job._id,
+    education_status: education ? education.status : null,
     date_end: job.date_start ? addMonthsToDate(job.date_start, job.display_month) : null,
   }
   const requirements = await JobRequirement.find({job: job.id}).populate('skills certificates majors colleges');

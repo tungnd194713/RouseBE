@@ -1,5 +1,5 @@
 const httpStatus = require('http-status');
-const { User, UserProfile, Job, JobEducation, CertificateSubjects, CollegeSubjects, JobRequirement, Subject, Certificate, Major, CandidateApply, Course, UserRoadMap } = require('../models');
+const { User, UserProfile, Job, JobEducation, CertificateSubjects, CollegeSubjects, JobRequirement, Subject, Certificate, Major, CandidateApply, Course, UserRoadMap, Module, Discussion, Note } = require('../models');
 const ApiError = require('../utils/ApiError');
 
 function skillLevelCompare(requirementLevel, profileLevel) {
@@ -977,6 +977,46 @@ const jobMatchingPoint = async (user_id, job_id) => {
 	return userPoint / jobPoint;
 }
 
+const getUserModule = async (userId, courseId, moduleId) => {
+  const userRoadmap = await UserRoadMap.findOne({ user: userId, is_finished: false });
+
+  if (!userRoadmap) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'Roadmap not found');
+  }
+
+  if (!userRoadmap.roadmap_milestone?.find((item) => item.course.toString() === courseId.toString())) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'Course not found');
+  }
+
+  const course = await Course.findById(courseId);
+  if (!course) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'Course not found');
+  }
+
+  if (!course.modules.find((item) => item.toString() === moduleId.toString())) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'Module not found');
+  }
+
+  const moduleData = await Module.findById(moduleId);
+  const discussion = await Discussion.find({ module_id: moduleId })
+  .populate('user_id', 'name')
+  .populate({
+    path: 'discussionReplies',
+    populate: {
+      path: 'user_id', // Populate the user properties in each discussionReply
+      model: 'User',
+    },
+  });
+  const noteList = await Note.find({ module_id: moduleId, user_id: userId });
+  return {
+    userRoadmap,
+    course,
+    moduleData: moduleData.toObject(),
+    discussion: discussion,
+    noteList: noteList,
+  }
+}
+
 module.exports = {
   createUser,
   queryUsers,
@@ -993,5 +1033,6 @@ module.exports = {
   applyJob,
   getAppliedJobs,
   startJobEducation,
-  getCurrentEducation
+  getCurrentEducation,
+  getUserModule,
 };

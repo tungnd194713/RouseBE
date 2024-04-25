@@ -30,6 +30,7 @@ router.get('/jobs/:jobId', auth(), userController.getDetailJob);
 router.post('/candidate-applies/', upload.none(), auth(), userController.applyJob);
 router.post('/candidate-applies/:candidateApplyId/start-education', auth(), userController.startJobEducation);
 router.get('/educations/current', auth(), userController.getCurrentEducation);
+router.get('/educations/courses/:courseId/modules/:moduleId', auth(), userController.getUserModule);
 router.post('/jobs/list/applied', auth(), userController.getAppliedJobs);
 
 module.exports = router;
