@@ -130,6 +130,13 @@ jobSchema.virtual('candidateApplies', {
   foreignField: 'job',
 });
 
+jobSchema.virtual('jobEducation', {
+  ref: 'JobEducation',
+  localField: '_id',
+  foreignField: 'job',
+});
+
+
 // add plugin that converts mongoose to json
 jobSchema.plugin(toJSON);
 jobSchema.plugin(paginate);
