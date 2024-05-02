@@ -35,7 +35,18 @@ const courseSchema = mongoose.Schema(
     estimated_time: {
       type: Number,
       required: true,
-    }
+    },
+    tests: [{
+      id: {
+        type: Schema.Types.ObjectId,
+        ref: "Test"
+      },
+      index: {
+        type: Number,
+        required: true
+      },
+      _id: false
+    }],
   },
   {
     timestamps: true,

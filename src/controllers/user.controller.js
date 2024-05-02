@@ -98,6 +98,15 @@ const getUserModule = catchAsync(async (req, res) => {
   }
 });
 
+const watchedModule = catchAsync(async (req, res) => {
+  try {
+    const data = await userService.watchedModule(req.user._id, req.params.courseId, req.params.moduleId);
+    res.status(httpStatus.OK).send(data);
+  } catch (e) {
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, e);
+  }
+});
+
 module.exports = {
   createUser,
   getUsers,
@@ -116,4 +125,5 @@ module.exports = {
   startJobEducation,
   getCurrentEducation,
   getUserModule,
+  watchedModule
 };

@@ -71,6 +71,21 @@ const acceptInterview = catchAsync(async (req, res) => {
   res.status(httpStatus.OK).send(data);
 });
 
+const getCandidateEducationProgress = catchAsync(async (req, res) => {
+  const data = await companyService.getCandidateEducationProgress(req.params.candidateId, req.user._id);
+  res.status(httpStatus.OK).send(data);
+});
+
+const getCVMatchingPoint = catchAsync(async (req, res) => {
+  const data = await companyService.getCVMatchingPoint(req.params.candidateId, req.user._id);
+  res.status(httpStatus.OK).send(data);
+});
+
+const toggleJobEducation = catchAsync(async (req, res) => {
+  const data = await companyService.toggleJobEducation(req.params.id, req.user._id);
+  res.status(httpStatus.OK).send(data);
+});
+
 module.exports = {
 	getCompanyJobs,
 	me,
@@ -85,4 +100,7 @@ module.exports = {
 	getUserCv,
   acceptEducation,
   acceptInterview,
+  getCandidateEducationProgress,
+  getCVMatchingPoint,
+  toggleJobEducation,
 }

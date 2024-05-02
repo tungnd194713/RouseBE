@@ -928,10 +928,12 @@ const getCurrentEducation = async (userId) => {
   if (!jobEducation) {
     throw new ApiError(httpStatus.NOT_FOUND, 'Job education not found');
   }
+  const roadmapProgress = getUserRoadmapProgress(userRoadmap);
   return {
     userRoadmap: userRoadmap.toObject(),
     job: job.toObject(),
-    jobEducation: jobEducation.toObject()
+    jobEducation: jobEducation.toObject(),
+    roadmapProgress,
   }
 }
 
@@ -977,6 +979,17 @@ const jobMatchingPoint = async (user_id, job_id) => {
 	return userPoint / jobPoint;
 }
 
+const getUserRoadmapProgress = (userRoadmap) => {
+  let totalDoneModule = 0;
+  let totalModules = 0;
+  userRoadmap.roadmap_milestone.forEach((milestone) => {
+    totalModules += milestone.course.modules.length;
+    totalDoneModule += milestone.done_modules.length;
+  })
+
+  return totalDoneModule / totalModules * 100;
+}
+
 const getUserModule = async (userId, courseId, moduleId) => {
   const userRoadmap = await UserRoadMap.findOne({ user: userId, is_finished: false });
 
@@ -1017,6 +1030,43 @@ const getUserModule = async (userId, courseId, moduleId) => {
   }
 }
 
+const watchedModule = async (userId, courseId, moduleId) => {
+  const course = await Course.findById(courseId);
+  if (!course) throw new ApiError(httpStatus.NOT_FOUND, 'Course not found');
+
+  if (!course.modules.find((item) => item.toString() === moduleId.toString())) throw new ApiError(httpStatus.NOT_FOUND, 'Module not found');
+
+  const module = await Module.findById(moduleId);
+  if (!module) throw new ApiError(httpStatus.NOT_FOUND, 'Module not found');
+
+  const userRoadmap = await UserRoadMap.findOne({ user: userId, is_finished: false });
+
+  if (!userRoadmap) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'Roadmap not found');
+  }
+
+  if (!userRoadmap.roadmap_milestone?.find((item) => item.course.toString() === courseId.toString())) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'Course not found');
+  }
+
+  const filter = {
+    _id: userRoadmap.id || userRoadmap._id,
+    user: userId,
+    'roadmap_milestone.course': courseId,
+  };
+
+  const update = {
+    $addToSet: {
+      'roadmap_milestone.$.done_modules': moduleId,
+    },
+    current_module: moduleId,
+    current_course: courseId,
+  };
+
+  await UserRoadMap.findOneAndUpdate(filter, update);
+  return 'Module done';
+}
+
 module.exports = {
   createUser,
   queryUsers,
@@ -1035,4 +1085,5 @@ module.exports = {
   startJobEducation,
   getCurrentEducation,
   getUserModule,
+  watchedModule,
 };

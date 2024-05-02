@@ -56,10 +56,10 @@ const userRoadmapSchema = mongoose.Schema(
           type: Boolean,
           default: false,
         },
-        done_modules: {
+        done_modules: [{
           type: mongoose.Schema.Types.ObjectId,
           ref: 'Module',
-        },
+        }],
         finished_date: Date,
       },
     ],
