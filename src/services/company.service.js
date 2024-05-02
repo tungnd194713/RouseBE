@@ -170,28 +170,35 @@ const createJob = async (company_id, data) => {
 }
 
 const getJobs = async (company_id, params) => {
-	let jobs = await Job.find({company_id}).populate('candidateApplies');
-	const jobEducations = await JobEducation.find({company: company_id});
-	const total = await Job.countDocuments({});
-	jobs = jobs.map(job => {
-		const education = jobEducations.find(edu => edu.job.toString() === job._id.toString());
+	const filter = {
+    title: { "$regex": params.title, "$options": "i" },
+		company_id,
+  }
+	if (params.status) {
+		filter.status = params.status
+	}
+  const queryOptions = {
+    populate: 'candidateApplies jobEducation'
+	}
+	let jobs = await Job.paginate(filter, queryOptions);
+	const jobData = jobs.results.map(job => {
 		return {
-				...job.toObject(), // Convert Mongoose document to plain JavaScript object
+				...job.toObject(),
 				date_start: job.date_start ? formatDate(job.date_start) : null,
 				date_end: job.date_start ? addMonthsToDate(job.date_start, job.display_month) : null,
-				max_education_month: education ? education.max_education_month : null,
-				scholarship: education ? education.scholarship : null,
-        education_status: education ? education.status : null,
+				max_education_month: job.jobEducation.length ? job.jobEducation[0].max_education_month : null,
+				scholarship: job.jobEducation.length ? job.jobEducation[0].scholarship : null,
+        education_status: job.jobEducation.length ? job.jobEducation[0].status : null,
         candidate_applies: job.candidateApplies,
 				id: job._id,
 		};
 	});
 	return {
-		data: jobs,
+		data: jobData,
 		meta: {
-			total,
-			current_page: 1,
-			per_page: 10,
+			total: jobs.totalResults,
+			current_page: jobs.page,
+			per_page: jobs.limit,
 		}
 	};
 }
@@ -250,17 +257,23 @@ const deleteJob = async (job_id) => {
   }
 }
 
-const getCandidateApplies = async (params) => {
-	const candidates = await CandidateApply.find({});
-  const total = await Job.countDocuments({});
-	return {
-		data: candidates,
-		meta: {
-			total,
-			current_page: 1,
-			per_page: 10,
-		}
-	};
+const getCandidateApplies = async (company, params, options = {}) => {
+	const filter = {
+    company,
+  }
+  const queryOptions = {
+		...options,
+    populate: 'user job',
+	}
+	if (params && params.key_word) {
+		const jobs = await Job.find({title: { "$regex": params.key_word, "$options": "i" }});
+		const jobIds = jobs.map((item) => item._id || item.id);
+		filter.job = { $in: jobIds };
+	}
+  if (params && params.status) {
+    filter.status = params.status;
+  }
+	return CandidateApply.paginate(filter, queryOptions);
 }
 
 const getJobCandidateApplies = async (job_id, options, params) => {

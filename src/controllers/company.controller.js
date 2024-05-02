@@ -42,7 +42,7 @@ const deleteJob = catchAsync(async (req, res) => {
 });
 
 const getCandidateApplies = catchAsync(async (req, res) => {
-	const data = await companyService.getCandidateApplies(req.query);
+	const data = await companyService.getCandidateApplies(req.user._id, req.query);
 	res.status(httpStatus.OK).send(data);
 })
 
