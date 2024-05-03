@@ -86,6 +86,11 @@ const toggleJobEducation = catchAsync(async (req, res) => {
   res.status(httpStatus.OK).send(data);
 });
 
+const openJobEducation = catchAsync(async (req, res) => {
+  const data = await companyService.openJobEducation(req.params.id, req.user._id);
+  res.status(httpStatus.OK).send(data);
+});
+
 module.exports = {
 	getCompanyJobs,
 	me,
@@ -103,4 +108,5 @@ module.exports = {
   getCandidateEducationProgress,
   getCVMatchingPoint,
   toggleJobEducation,
+	openJobEducation,
 }

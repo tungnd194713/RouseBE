@@ -881,6 +881,9 @@ const startJobEducation = async (userId, candidateApplyId) => {
   if (!candidateApply.education_courses || !candidateApply.education_courses.length) {
     throw new ApiError(httpStatus.NOT_FOUND, 'Unable to start education');
   }
+	const jobEducation = JobEducation.findOne({ job: candidateApply.job });
+	if (!jobEducation) throw new ApiError(httpStatus.NOT_FOUND, 'Education not found');
+	
   const currentCourse = await Course.findById(candidateApply.education_courses[0]);
   const userRoadmap = {
     title: candidateApply.job.title + ' (Lộ trình học)',
@@ -888,6 +891,7 @@ const startJobEducation = async (userId, candidateApplyId) => {
     job: candidateApply.job.id,
     current_course: candidateApply.education_courses[0],
     current_module: currentCourse?.modules[0],
+		scholarship: jobEducation.scholarship || 0,
     roadmap_milestone: candidateApply.education_courses.map((item) => {
       return {
         course: item,
@@ -1071,8 +1075,8 @@ const watchedModule = async (userId, courseId, moduleId) => {
   return 'Module done';
 }
 
-const unlockRoadmapCourse = async (roadmapId, courseId, userId) => {
-	const userRoadmap = await UserRoadMap.findOne({ _id: roadmapId, user: userId });
+const unlockRoadmapCourse = async (userId, courseId) => {
+	const userRoadmap = await UserRoadMap.findOne({ user: userId, is_finished: false });
 
 	if (!userRoadmap) throw new ApiError(httpStatus.NOT_FOUND, 'Roadmap not found');
 
@@ -1098,7 +1102,11 @@ const unlockRoadmapCourse = async (roadmapId, courseId, userId) => {
 
 	const user = await User.findById(userId);
 	const point_cost = course.point_cost * ((100 - userRoadmap.scholarship) / 100);
-	user.point_owned = user.point_owned - point_cost;
+	if (user.point_owned < point_cost) {
+		throw new ApiError(httpStatus.BAD_REQUEST, 'Insufficient point');
+	} else {
+		user.point_owned = user.point_owned - point_cost;
+	}
 
 	await user.save();
 

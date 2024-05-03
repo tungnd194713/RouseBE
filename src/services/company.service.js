@@ -910,6 +910,34 @@ const getCVMatchingPoint = async (candidateId, companyId) => {
 	}
 }
 
+const openJobEducation = async (jobId, companyId) => {
+	const job = await Job.find({ _id: jobId, company: companyId });
+
+  if (!job) throw new ApiError(httpStatus.NOT_FOUND, 'Job not found');
+
+  const jobEducation = await JobEducation.findOne({ job: jobId }).populate('courses');
+  if (!jobEducation) throw new ApiError(httpStatus.NOT_FOUND, 'Education not found');
+
+  if (!jobEducation.scholarship_paid) {
+		jobEducation.status = 3;
+		await jobEducation.save();
+		const totalPointCost = coursesArray.reduce((total, course) => {
+			return total + course.point_cost;
+		}, 0);
+		
+		const scholarship = totalPointCost * (jobEducation.scholarship / 100) * jobEducation.number_recruitments;
+		const company = await Company.findById(companyId);
+		if (company.point_owned < scholarship) {
+			throw new ApiError(httpStatus.BAD_REQUEST, 'Insufficient point');
+		} else {
+			company.point_owned -= scholarship;
+		}
+		await company.save();
+	}
+
+  return 'Education updated';
+}
+
 const toggleJobEducation = async (jobId, companyId) => {
   const job = await Job.find({ _id: jobId, company: companyId });
 
@@ -1118,4 +1146,5 @@ module.exports = {
   getCandidateEducationProgress,
   getCVMatchingPoint,
   toggleJobEducation,
+	openJobEducation,
 }

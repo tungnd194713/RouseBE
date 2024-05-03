@@ -14,6 +14,7 @@ router.get('/me', auth(), companyController.me);
 router.post('/jobs/create', upload.none(), auth(), companyController.createJob);
 router.get('/jobs/', auth(), companyController.getJobs);
 router.get('/jobs/:id', auth(), companyController.getJobById);
+router.get('/jobs/:id/education-open', auth(), companyController.openJobEducation);
 router.get('/jobs/:id/education-toggle', auth(), companyController.toggleJobEducation);
 router.get('/candidate-applies/:userId', auth(), companyController.getUserCv);
 router.get('/candidate-applies/job/:id', auth(), companyController.getJobCandidateApplies);

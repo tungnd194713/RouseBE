@@ -21,11 +21,19 @@ const jobEducationSchema = mongoose.Schema(
       type: Number,
       required: true,
     },
+		number_recruitments: {
+			type: Number,
+			required: true,
+		},
     status: {
       type: Number,
       enum: [1, 2, 3],
       default: 1,
     },
+		scholarship_paid: {
+			type: Boolean,
+			default: false,
+		},
     courses: [{
       type: mongoose.SchemaTypes.ObjectId,
       ref: 'Course',

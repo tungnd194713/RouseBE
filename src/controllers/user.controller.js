@@ -107,6 +107,16 @@ const watchedModule = catchAsync(async (req, res) => {
   }
 });
 
+const unlockRoadmapCourse = catchAsync(async (req, res) => {
+  try {
+    const data = await userService.unlockRoadmapCourse(req.user._id, req.params.courseId);
+    res.status(httpStatus.OK).send(data);
+  } catch (e) {
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, e);
+  }
+});
+
+
 module.exports = {
   createUser,
   getUsers,
@@ -125,5 +135,6 @@ module.exports = {
   startJobEducation,
   getCurrentEducation,
   getUserModule,
-  watchedModule
+  watchedModule,
+	unlockRoadmapCourse,
 };
