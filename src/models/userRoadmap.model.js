@@ -34,6 +34,9 @@ const userRoadmapSchema = mongoose.Schema(
       ref: 'Module',
       // required: true,
     },
+		scholarship: {
+			type: Number,
+		},
     roadmap_milestone: [
       {
         course: {
@@ -61,6 +64,10 @@ const userRoadmapSchema = mongoose.Schema(
           ref: 'Module',
         }],
         finished_date: Date,
+				is_unlocked: {
+					type: Boolean,
+					default: false,
+				},
       },
     ],
     progress: {

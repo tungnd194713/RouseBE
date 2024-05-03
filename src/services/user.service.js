@@ -997,7 +997,9 @@ const getUserModule = async (userId, courseId, moduleId) => {
     throw new ApiError(httpStatus.NOT_FOUND, 'Roadmap not found');
   }
 
-  if (!userRoadmap.roadmap_milestone?.find((item) => item.course.toString() === courseId.toString())) {
+	const roadmapCourse = userRoadmap.roadmap_milestone?.find((item) => item.course.toString() === courseId.toString());
+
+  if (!roadmapCourse || !roadmapCourse.is_unlocked) {
     throw new ApiError(httpStatus.NOT_FOUND, 'Course not found');
   }
 
@@ -1045,7 +1047,9 @@ const watchedModule = async (userId, courseId, moduleId) => {
     throw new ApiError(httpStatus.NOT_FOUND, 'Roadmap not found');
   }
 
-  if (!userRoadmap.roadmap_milestone?.find((item) => item.course.toString() === courseId.toString())) {
+  const roadmapCourse = userRoadmap.roadmap_milestone?.find((item) => item.course.toString() === courseId.toString());
+
+  if (!roadmapCourse || !roadmapCourse.is_unlocked) {
     throw new ApiError(httpStatus.NOT_FOUND, 'Course not found');
   }
 
@@ -1067,6 +1071,40 @@ const watchedModule = async (userId, courseId, moduleId) => {
   return 'Module done';
 }
 
+const unlockRoadmapCourse = async (roadmapId, courseId, userId) => {
+	const userRoadmap = await UserRoadMap.findOne({ _id: roadmapId, user: userId });
+
+	if (!userRoadmap) throw new ApiError(httpStatus.NOT_FOUND, 'Roadmap not found');
+
+	if (!userRoadmap.roadmap_milestone?.find((item) => item.course.toString() === courseId.toString())) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'Course not found');
+  }
+
+  const course = await Course.findById(courseId);
+  if (!course) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'Course not found');
+  }
+
+	const milestoneIndex = userRoadmap.roadmap_milestone.findIndex(milestone => milestone.course.equals(courseId));
+	// Check if the milestone with the specified course_id exists
+	if (milestoneIndex !== -1) {
+		// Update the is_unlocked property of the milestone
+		userRoadmap.roadmap_milestone[milestoneIndex].is_unlocked = true; // Set newValue to your desired boolean value
+	} else {
+		throw new ApiError(httpStatus.NOT_FOUND, 'Course not found');
+	}
+
+	await userRoadmap.save();
+
+	const user = await User.findById(userId);
+	const point_cost = course.point_cost * ((100 - userRoadmap.scholarship) / 100);
+	user.point_owned = user.point_owned - point_cost;
+
+	await user.save();
+
+	return 'Course unlocked';
+}
+
 module.exports = {
   createUser,
   queryUsers,
@@ -1086,4 +1124,5 @@ module.exports = {
   getCurrentEducation,
   getUserModule,
   watchedModule,
+	unlockRoadmapCourse,
 };
