@@ -91,6 +91,11 @@ const openJobEducation = catchAsync(async (req, res) => {
   res.status(httpStatus.OK).send(data);
 });
 
+const sendChangeRequest = catchAsync(async (req, res) => {
+  const data = await companyService.sendChangeRequest(req.params.id, req.user._id, req.body);
+  res.status(httpStatus.OK).send(data);
+});
+
 module.exports = {
 	getCompanyJobs,
 	me,
@@ -109,4 +114,5 @@ module.exports = {
   getCVMatchingPoint,
   toggleJobEducation,
 	openJobEducation,
+  sendChangeRequest
 }

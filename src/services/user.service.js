@@ -883,7 +883,7 @@ const startJobEducation = async (userId, candidateApplyId) => {
   }
 	const jobEducation = JobEducation.findOne({ job: candidateApply.job });
 	if (!jobEducation) throw new ApiError(httpStatus.NOT_FOUND, 'Education not found');
-	
+
   const currentCourse = await Course.findById(candidateApply.education_courses[0]);
   const userRoadmap = {
     title: candidateApply.job.title + ' (Lộ trình học)',
@@ -1093,22 +1093,20 @@ const unlockRoadmapCourse = async (userId, courseId) => {
 	// Check if the milestone with the specified course_id exists
 	if (milestoneIndex !== -1) {
 		// Update the is_unlocked property of the milestone
-		userRoadmap.roadmap_milestone[milestoneIndex].is_unlocked = true; // Set newValue to your desired boolean value
+    const user = await User.findById(userId);
+    const point_cost = course.point_cost * ((100 - userRoadmap.scholarship) / 100);
+    if (user.point_owned < point_cost) {
+      throw new ApiError(httpStatus.BAD_REQUEST, 'Insufficient point');
+    } else {
+      userRoadmap.roadmap_milestone[milestoneIndex].is_unlocked = true; // Set newValue to your desired boolean value
+      user.point_owned = user.point_owned - point_cost;
+      await userRoadmap.save();
+      await user.save();
+    }
 	} else {
 		throw new ApiError(httpStatus.NOT_FOUND, 'Course not found');
 	}
 
-	await userRoadmap.save();
-
-	const user = await User.findById(userId);
-	const point_cost = course.point_cost * ((100 - userRoadmap.scholarship) / 100);
-	if (user.point_owned < point_cost) {
-		throw new ApiError(httpStatus.BAD_REQUEST, 'Insufficient point');
-	} else {
-		user.point_owned = user.point_owned - point_cost;
-	}
-
-	await user.save();
 
 	return 'Course unlocked';
 }

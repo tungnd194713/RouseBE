@@ -38,7 +38,7 @@ const courseSchema = mongoose.Schema(
     },
     tests: [{
       id: {
-        type: Schema.Types.ObjectId,
+        type: mongoose.Schema.Types.ObjectId,
         ref: "Test"
       },
       index: {

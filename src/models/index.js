@@ -33,3 +33,6 @@ module.exports.Major = require('./major.model');
 module.exports.UserProfile = require('./userProfile.model');
 module.exports.JobEducation = require('./jobEducation.model');
 module.exports.JobRequirement = require('./jobRequirement.model');
+module.exports.Mentor = require('./mentor.model');
+module.exports.MentorShift = require('./mentorShift.model');
+module.exports.MentorRating = require('./mentorRating.model');

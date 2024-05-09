@@ -21,13 +21,13 @@ const jobEducationSchema = mongoose.Schema(
       type: Number,
       required: true,
     },
-		number_recruitments: {
+		number_trainings: {
 			type: Number,
 			required: true,
 		},
     status: {
       type: Number,
-      enum: [1, 2, 3],
+      enum: [1, 2, 3, 4],
       default: 1,
     },
 		scholarship_paid: {
@@ -40,9 +40,18 @@ const jobEducationSchema = mongoose.Schema(
     }],
     change_requests: [
       {
-        content: String,
-        requested_date: Date,
-        is_read: Boolean,
+        content: {
+          type: String,
+          required: true,
+        },
+        requested_date: {
+          type: Date,
+          default: Date.now(),
+        },
+        is_read: {
+          type: Boolean,
+          default: false
+        },
       }
     ]
   },

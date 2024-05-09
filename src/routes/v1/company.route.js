@@ -16,6 +16,7 @@ router.get('/jobs/', auth(), companyController.getJobs);
 router.get('/jobs/:id', auth(), companyController.getJobById);
 router.get('/jobs/:id/education-open', auth(), companyController.openJobEducation);
 router.get('/jobs/:id/education-toggle', auth(), companyController.toggleJobEducation);
+router.post('/jobs/:id/change-request', auth(), companyController.sendChangeRequest);
 router.get('/candidate-applies/:userId', auth(), companyController.getUserCv);
 router.get('/candidate-applies/job/:id', auth(), companyController.getJobCandidateApplies);
 router.get('/candidate-applies/', auth(), companyController.getCandidateApplies);

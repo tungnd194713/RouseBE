@@ -1,4 +1,3 @@
-const mongoose = require('mongoose');
 const { Company, Job, CandidateApply, Subject, College, Certificate, Course, Major, CertificateSubjects, CollegeSubjects, JobEducation, UserProfile, User, UserRoadMap } = require('../models');
 const JobRequirement = require('../models/jobRequirement.model');
 const ApiError = require('../utils/ApiError');
@@ -98,6 +97,7 @@ const createJob = async (company_id, data) => {
 				job: job.id,
 				max_education_month: data.max_education_month,
 				scholarship: data.scholarship,
+        number_trainings: data.number_trainings,
 			})
 		}
 
@@ -220,7 +220,7 @@ const getJobById = async (id) => {
     education: education.toObject(),
     education_status: education ? education.status : null,
     date_end: job.date_start ? addMonthsToDate(job.date_start, job.display_month) : null,
-    registeredCourses: education && education.status === 2 ? education.courses : [],
+    registeredCourses: education && (education.status === 2 || education.status === 4) ? education.courses : [],
   }
   const requirements = await JobRequirement.find({job: job.id}).populate('skills certificates majors colleges');
   const beginnerSkills = requirements.filter(item => item.type === 'Skill' && item.level === 'Beginner').map(obj => obj.skills);
@@ -911,7 +911,7 @@ const getCVMatchingPoint = async (candidateId, companyId) => {
 }
 
 const openJobEducation = async (jobId, companyId) => {
-	const job = await Job.find({ _id: jobId, company: companyId });
+	const job = await Job.findOne({ _id: jobId, company_id: companyId });
 
   if (!job) throw new ApiError(httpStatus.NOT_FOUND, 'Job not found');
 
@@ -924,8 +924,8 @@ const openJobEducation = async (jobId, companyId) => {
 		const totalPointCost = coursesArray.reduce((total, course) => {
 			return total + course.point_cost;
 		}, 0);
-		
-		const scholarship = totalPointCost * (jobEducation.scholarship / 100) * jobEducation.number_recruitments;
+
+		const scholarship = totalPointCost * (jobEducation.scholarship / 100) * jobEducation.number_trainings;
 		const company = await Company.findById(companyId);
 		if (company.point_owned < scholarship) {
 			throw new ApiError(httpStatus.BAD_REQUEST, 'Insufficient point');
@@ -939,7 +939,7 @@ const openJobEducation = async (jobId, companyId) => {
 }
 
 const toggleJobEducation = async (jobId, companyId) => {
-  const job = await Job.find({ _id: jobId, company: companyId });
+  const job = await Job.findOne({ _id: jobId, company_id: companyId });
 
   if (!job) throw new ApiError(httpStatus.NOT_FOUND, 'Job not found');
 
@@ -951,6 +951,26 @@ const toggleJobEducation = async (jobId, companyId) => {
     jobEducation.status = 2;
   }
   await jobEducation.save();
+
+  return 'Education updated';
+}
+
+const sendChangeRequest = async (jobId, companyId, body) => {
+  console.log(jobId, companyId)
+  const job = await Job.findOne({ _id: jobId, company_id: companyId });
+
+  if (!job) throw new ApiError(httpStatus.NOT_FOUND, 'Job not found');
+
+  const jobEducation = await JobEducation.findOne({ job: jobId });
+  if (!jobEducation) throw new ApiError(httpStatus.NOT_FOUND, 'Education not found');
+
+  await JobEducation.updateOne(
+    { _id: jobEducation.id || jobEducation._id },
+    {
+      $push: { change_requests: body.change_request },
+      $set: { status: 4 }
+    }
+  );
 
   return 'Education updated';
 }
@@ -1147,4 +1167,5 @@ module.exports = {
   getCVMatchingPoint,
   toggleJobEducation,
 	openJobEducation,
+  sendChangeRequest
 }
