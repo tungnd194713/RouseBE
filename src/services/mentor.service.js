@@ -1,6 +1,72 @@
 const { MentorShift, Mentor, User } = require('../models');
 const ApiError = require('../utils/ApiError');
 const httpStatus = require('http-status');
+const mongoose = require('mongoose');
+
+const seedMentor = async () => {
+	const data = [
+		{
+			user: mongoose.Types.ObjectId('663d898bded84a19dd91ee52'),
+			facebook_link: "https://www.facebook.com/mentor2",
+			twitter_link: "https://twitter.com/mentor2",
+			biography: "I have a strong background in computer science and love to teach programming.",
+			specialized_fields: [],
+			start_working_date: new Date("2022-06-01"),
+			end_working_date: new Date("2024-12-31"),
+			weekdays: {
+				tuesday: {
+					start_hour: new Date("2024-05-10T10:00:00"),
+					end_hour: new Date("2024-05-10T18:00:00"),
+				},
+				thursday: {
+					start_hour: new Date("2024-05-12T11:00:00"),
+					end_hour: new Date("2024-05-12T19:00:00"),
+				},
+				friday: {
+					start_hour: new Date("2024-05-13T09:00:00"),
+					end_hour: new Date("2024-05-13T16:00:00"),
+				},
+				saturday: {
+					start_hour: new Date("2024-05-14T10:30:00"),
+					end_hour: new Date("2024-05-14T15:30:00"),
+				},
+			}
+		},
+		// {
+		// 	user: "3456789012",
+		// 	facebook_link: "https://www.facebook.com/mentor3",
+		// 	twitter_link: "https://twitter.com/mentor3",
+		// 	biography: "I am passionate about literature and enjoy helping students explore classic works.",
+		// 	specialized_fields: [{
+		// 		subject: "345678901", // Assuming another subject ID
+		// 		level: "Beginner",
+		// 	}],
+		// 	start_working_date: new Date("2023-03-15"),
+		// 	end_working_date: new Date("2024-10-31"),
+		// 	weekdays: {
+		// 		monday: {
+		// 			start_hour: new Date("2024-05-09T09:00:00"),
+		// 			end_hour: new Date("2024-05-09T17:00:00"),
+		// 		},
+		// 		wednesday: {
+		// 			start_hour: new Date("2024-05-11T09:30:00"),
+		// 			end_hour: new Date("2024-05-11T16:30:00"),
+		// 		},
+		// 		friday: {
+		// 			start_hour: new Date("2024-05-13T09:00:00"),
+		// 			end_hour: new Date("2024-05-13T16:00:00"),
+		// 		},
+		// 	}
+		// }
+	]
+
+	try {
+		await Mentor.insertMany(data);
+		return 'Mentors added!';
+	} catch (e) {
+		throw new ApiError(httpStatus.BAD_REQUEST, e)
+	}
+}
 
 const findMentor = async (params) => {
   // params = {
@@ -37,6 +103,10 @@ const findMentor = async (params) => {
       }
     },
   })
+}
+
+const getProfile = async (userId) => {
+	return Mentor.findOne({ user: userId });
 }
 
 const updateProfile = async (userId, data) => {
@@ -83,6 +153,8 @@ const getMentorShifts = async (userId, params, options) => {
 }
 
 module.exports = {
+	seedMentor,
+	getProfile,
   updateProfile,
   getMentorShifts,
 };
