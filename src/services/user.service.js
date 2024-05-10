@@ -1,5 +1,5 @@
 const httpStatus = require('http-status');
-const { User, UserProfile, Job, JobEducation, CertificateSubjects, CollegeSubjects, JobRequirement, Subject, Certificate, Major, CandidateApply, Course, UserRoadMap, Module, Discussion, Note } = require('../models');
+const { User, UserProfile, Job, JobEducation, CertificateSubjects, CollegeSubjects, JobRequirement, Subject, Certificate, Major, CandidateApply, Course, UserRoadMap, Module, Discussion, Note, Mentor, MentorShift } = require('../models');
 const ApiError = require('../utils/ApiError');
 
 function skillLevelCompare(requirementLevel, profileLevel) {
@@ -133,8 +133,8 @@ const getUserById = async (id) => {
  * @param {string} email
  * @returns {Promise<User>}
  */
-const getUserByEmail = async (email) => {
-  return User.findOne({ email });
+const getUserByEmail = async (email, role) => {
+  return User.findOne({ email, role });
 };
 
 /**
@@ -1075,7 +1075,7 @@ const watchedModule = async (userId, courseId, moduleId) => {
   return 'Module done';
 }
 
-const unlockRoadmapCourse = async (userId, courseId) => {
+const unlockRoadmapCourse = async (userId, courseId, body) => {
 	const userRoadmap = await UserRoadMap.findOne({ user: userId, is_finished: false });
 
 	if (!userRoadmap) throw new ApiError(httpStatus.NOT_FOUND, 'Roadmap not found');
@@ -1107,8 +1107,94 @@ const unlockRoadmapCourse = async (userId, courseId) => {
 		throw new ApiError(httpStatus.NOT_FOUND, 'Course not found');
 	}
 
-
+  if (body.is_mentor_hired) {
+    // body = {
+    //   shift_data: [
+    //     {
+    //       mentorId: id,
+    //       weekdays: [{ day: "monday", start_hour: new Date("2024-05-09T08:00:00"), end_hour: new Date("2024-05-09T10:00:00") }],
+    //     },
+    //     {
+    //       mentorId: id,
+    //       weekdays: [{ day: "tuesday", start_hour: new Date("2024-05-10T10:00:00"), end_hour: new Date("2024-05-10T12:00:00") }],
+    //     }
+    //   ]
+    // }
+    const shift_data = body.shift_data
+    const createData = [];
+    shift_data.forEach((item) => {
+      const shift_days = {};
+      item.weekdays.forEach((weekday) => {
+        shift_days[weekday.day] = {
+          start_hour: weekday.start_hour,
+          end_hour: weekday.end_hour,
+        }
+      })
+      const shiftData = {
+        user: userId,
+        course: courseId,
+        mentor: body.mentorId,
+        date_start: Date.now(),
+        is_finished: false,
+        shift_days,
+      }
+      createData.push(shiftData);
+    })
+    try {
+      await MentorShift.insertMany(createData);
+      return 'Mentor assigned';
+    } catch (e) {
+      throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, e);
+    }
+  }
 	return 'Course unlocked';
+}
+
+const assignMentor = async (userId, courseId, body) => {
+  // body = {
+  //   shift_data: [
+  //     {
+  //       mentorId: id,
+  //       weekdays: [{ day: "monday", start_hour: new Date("2024-05-09T08:00:00"), end_hour: new Date("2024-05-09T10:00:00") }],
+  //     },
+  //     {
+  //       mentorId: id,
+  //       weekdays: [{ day: "tuesday", start_hour: new Date("2024-05-10T10:00:00"), end_hour: new Date("2024-05-10T12:00:00") }],
+  //     }
+  //   ]
+  // }
+  const user = await User.findById(userId);
+  if (!user) throw new ApiError(httpStatus.BAD_REQUEST, 'User not found');
+
+  const course = await Course.findById(courseId);
+  if (!course) throw new ApiError(httpStatus.BAD_REQUEST, 'Course not found');
+
+  const shift_data = body.shift_data
+  const createData = [];
+  shift_data.forEach((item) => {
+    const shift_days = {};
+    item.weekdays.forEach((weekday) => {
+      shift_days[weekday.day] = {
+        start_hour: weekday.start_hour,
+        end_hour: weekday.end_hour,
+      }
+    })
+    const shiftData = {
+      user: userId,
+      course: courseId,
+      mentor: body.mentorId,
+      date_start: Date.now(),
+      is_finished: false,
+      shift_days,
+    }
+    createData.push(shiftData);
+  })
+  try {
+    await MentorShift.insertMany(createData);
+    return 'Mentor assigned';
+  } catch (e) {
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, e);
+  }
 }
 
 module.exports = {
@@ -1131,4 +1217,5 @@ module.exports = {
   getUserModule,
   watchedModule,
 	unlockRoadmapCourse,
+  assignMentor,
 };

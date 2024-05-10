@@ -7,6 +7,8 @@ const mentorSchema = new Schema({
     type: Schema.Types.ObjectId,
     ref: 'User'
   },
+  mentor_name: String,
+  zalo_number: String,
   facebook_link: String,
   twitter_link: String,
   biography: String,

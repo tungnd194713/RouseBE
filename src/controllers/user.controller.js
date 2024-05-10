@@ -109,7 +109,7 @@ const watchedModule = catchAsync(async (req, res) => {
 
 const unlockRoadmapCourse = catchAsync(async (req, res) => {
   try {
-    const data = await userService.unlockRoadmapCourse(req.user._id, req.params.courseId);
+    const data = await userService.unlockRoadmapCourse(req.user._id, req.params.courseId, req.body);
     res.status(httpStatus.OK).send(data);
   } catch (e) {
     throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, e);

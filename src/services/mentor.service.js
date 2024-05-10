@@ -1,4 +1,4 @@
-const { MentorShift, Mentor } = require('../models');
+const { MentorShift, Mentor, User } = require('../models');
 const ApiError = require('../utils/ApiError');
 const httpStatus = require('http-status');
 
@@ -38,3 +38,52 @@ const findMentor = async (params) => {
     },
   })
 }
+
+const updateProfile = async (userId, data) => {
+  // specialized_skills = JSON([
+  //   {
+  //     subject: id1,
+  //     level: 1,
+  //   },
+  //   {
+  //     subject: id2,
+  //     level: 2
+  //   }
+  // ])
+  const user = await User.findById(userId);
+  if (user.role !== 'mentor') throw new ApiError(httpStatus.BAD_REQUEST, 'Not a mentor');
+
+  const mentor = await Mentor.findOne({ user: userId });
+  if (!mentor) throw new ApiError(httpStatus.BAD_REQUEST, 'Not a mentor');
+
+  const updateBody = {
+    ...data,
+    specialized_fields: JSON.parse(data.specialized_fields),
+  }
+  Object.assign(mentor, updateBody);
+  await mentor.save();
+
+  return 'Mentor profile updated!';
+}
+
+const getMentorShifts = async (userId, params, options) => {
+  const mentor = await Mentor.findOne({ user: userId });
+  if (!mentor) throw new ApiError(httpStatus.BAD_REQUEST, 'Not a mentor');
+
+  const filter = {
+    mentor: mentor._id || mentor.id,
+  }
+  if (params.is_finished !== null) {
+    filter.is_finished = params.is_finished;
+  }
+  const queryOptions = {
+    ...options
+  }
+  return MentorShift.paginate(filter, queryOptions)
+}
+
+module.exports = {
+  updateProfile,
+  getMentorShifts,
+};
+
