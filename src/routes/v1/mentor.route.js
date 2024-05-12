@@ -9,5 +9,6 @@ const router = express.Router();
 
 router.post('/profile/', auth(), mentorController.updateProfile);
 router.post('/shifts/list', auth(), mentorController.getMentorShifts);
+router.post('/find', auth(), mentorController.findMentor);
 
 module.exports = router;

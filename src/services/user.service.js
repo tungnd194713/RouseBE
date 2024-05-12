@@ -2,6 +2,11 @@ const httpStatus = require('http-status');
 const { User, UserProfile, Job, JobEducation, CertificateSubjects, CollegeSubjects, JobRequirement, Subject, Certificate, Major, CandidateApply, Course, UserRoadMap, Module, Discussion, Note, Mentor, MentorShift } = require('../models');
 const ApiError = require('../utils/ApiError');
 
+const convertHourToNumber = (hourString) => {
+  const [hour, minute] = hourString.split(":").map(Number);
+  return hour + minute / 60;
+}
+
 function skillLevelCompare(requirementLevel, profileLevel) {
 	if (requirementLevel == 'Advanced') {
 		if (profileLevel == 'Advanced') return 1;
@@ -924,6 +929,11 @@ const getCurrentEducation = async (userId) => {
   if (!userRoadmap) {
     throw new ApiError(httpStatus.NOT_FOUND, 'Roadmap not found');
   }
+  const courseIds = userRoadmap.roadmap_milestone.map((item) => item.course.id || item.course._id);
+  const mentorShifts = await MentorShift.find({
+    user: userId,
+    course: { $in: courseIds },
+  }).populate('mentor')
   const job = await Job.findById(userRoadmap.job).select('id title');
   if (!job) {
     throw new ApiError(httpStatus.NOT_FOUND, 'Job not found');
@@ -938,6 +948,7 @@ const getCurrentEducation = async (userId) => {
     job: job.toObject(),
     jobEducation: jobEducation.toObject(),
     roadmapProgress,
+    mentorShifts,
   }
 }
 
@@ -1107,36 +1118,37 @@ const unlockRoadmapCourse = async (userId, courseId, body) => {
 		throw new ApiError(httpStatus.NOT_FOUND, 'Course not found');
 	}
 
-  if (body.is_mentor_hired) {
+  if (body.request_mentor) {
     // body = {
-    //   shift_data: [
+    //   mentor_data: [
     //     {
     //       mentorId: id,
-    //       weekdays: [{ day: "monday", start_hour: new Date("2024-05-09T08:00:00"), end_hour: new Date("2024-05-09T10:00:00") }],
+    //       weekday: { day: "monday", start_hour: new Date("2024-05-09T08:00:00"), end_hour: new Date("2024-05-09T10:00:00") },
     //     },
     //     {
     //       mentorId: id,
-    //       weekdays: [{ day: "tuesday", start_hour: new Date("2024-05-10T10:00:00"), end_hour: new Date("2024-05-10T12:00:00") }],
+    //       weekday: { day: "tuesday", start_hour: new Date("2024-05-10T10:00:00"), end_hour: new Date("2024-05-10T12:00:00") },
     //     }
     //   ]
     // }
-    const shift_data = body.shift_data
+    const shift_data = JSON.parse(body.mentor_data)
     const createData = [];
     shift_data.forEach((item) => {
       const shift_days = {};
-      item.weekdays.forEach((weekday) => {
-        shift_days[weekday.day] = {
-          start_hour: weekday.start_hour,
-          end_hour: weekday.end_hour,
-        }
-      })
+      const weekday = item.weekday
+      shift_days[weekday.day] = {
+        start_hour: convertHourToNumber(weekday.start_hour),
+        end_hour: convertHourToNumber(weekday.end_hour),
+      }
       const shiftData = {
         user: userId,
         course: courseId,
-        mentor: body.mentorId,
+        mentor: item.mentorId,
         date_start: Date.now(),
         is_finished: false,
         shift_days,
+        status: 1,
+        day_of_week: weekday.day,
       }
       createData.push(shiftData);
     })
@@ -1150,16 +1162,16 @@ const unlockRoadmapCourse = async (userId, courseId, body) => {
 	return 'Course unlocked';
 }
 
-const assignMentor = async (userId, courseId, body) => {
+const requestMentor = async (userId, courseId, body) => {
   // body = {
-  //   shift_data: [
+  //   mentor_data: [
   //     {
   //       mentorId: id,
-  //       weekdays: [{ day: "monday", start_hour: new Date("2024-05-09T08:00:00"), end_hour: new Date("2024-05-09T10:00:00") }],
+  //       weekday: { day: "monday", start_hour: new Date("2024-05-09T08:00:00"), end_hour: new Date("2024-05-09T10:00:00") },
   //     },
   //     {
   //       mentorId: id,
-  //       weekdays: [{ day: "tuesday", start_hour: new Date("2024-05-10T10:00:00"), end_hour: new Date("2024-05-10T12:00:00") }],
+  //       weekday: { day: "tuesday", start_hour: new Date("2024-05-10T10:00:00"), end_hour: new Date("2024-05-10T12:00:00") },
   //     }
   //   ]
   // }
@@ -1169,23 +1181,23 @@ const assignMentor = async (userId, courseId, body) => {
   const course = await Course.findById(courseId);
   if (!course) throw new ApiError(httpStatus.BAD_REQUEST, 'Course not found');
 
-  const shift_data = body.shift_data
+  const shift_data = JSON.parse(body.mentor_data)
   const createData = [];
   shift_data.forEach((item) => {
     const shift_days = {};
-    item.weekdays.forEach((weekday) => {
-      shift_days[weekday.day] = {
-        start_hour: weekday.start_hour,
-        end_hour: weekday.end_hour,
-      }
-    })
+    shift_days[item.weekday.day] = {
+      start_hour: convertHourToNumber(item.weekday.start_hour),
+      end_hour: convertHourToNumber(item.weekday.end_hour),
+    }
     const shiftData = {
       user: userId,
       course: courseId,
-      mentor: body.mentorId,
+      mentor: item.mentorId,
       date_start: Date.now(),
       is_finished: false,
+      status: 1,
       shift_days,
+      day_of_week: item.weekday.day,
     }
     createData.push(shiftData);
   })
@@ -1217,5 +1229,5 @@ module.exports = {
   getUserModule,
   watchedModule,
 	unlockRoadmapCourse,
-  assignMentor,
+  requestMentor,
 };

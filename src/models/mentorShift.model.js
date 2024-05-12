@@ -15,39 +15,47 @@ const mentorShiftSchema = new Schema({
     type: Schema.Types.ObjectId,
     ref: 'Course'
   },
+  status: {
+    type: Number,
+    required: true,
+    enum: [1, 2, 3, 4], // 1: Gửi yêu cầu, 2: Đang hỗ trợ, 3: Đã hoàn thành, 4: Đã từ chối
+  },
   date_start: Date,
   date_end: Date,
   is_finished: Boolean,
   shift_days: {
     monday: {
-      start_hour: Date,
-      end_hour: Date,
+      start_hour: Number,
+      end_hour: Number,
     },
     tuesday: {
-      start_hour: Date,
-      end_hour: Date,
+      start_hour: Number,
+      end_hour: Number,
     },
     wednesday: {
-      start_hour: Date,
-      end_hour: Date,
+      start_hour: Number,
+      end_hour: Number,
     },
     thursday: {
-      start_hour: Date,
-      end_hour: Date,
+      start_hour: Number,
+      end_hour: Number,
     },
     friday: {
-      start_hour: Date,
-      end_hour: Date,
+      start_hour: Number,
+      end_hour: Number,
     },
     saturday: {
-      start_hour: Date,
-      end_hour: Date,
+      start_hour: Number,
+      end_hour: Number,
     },
     sunday: {
-      start_hour: Date,
-      end_hour: Date,
+      start_hour: Number,
+      end_hour: Number,
     },
-  }
+    day_of_week: {
+      type: String,
+    }
+  },
 },
 {
   timestamps: true,

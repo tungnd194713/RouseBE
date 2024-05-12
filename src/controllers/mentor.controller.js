@@ -12,7 +12,13 @@ const getMentorShifts = catchAsync(async (req, res) => {
   res.status(httpStatus.OK).send(data);
 });
 
+const findMentor = catchAsync(async (req, res) => {
+  const data = await mentorService.findMentor(req.body);
+  res.status(httpStatus.OK).send(data);
+});
+
 module.exports = {
 	updateProfile,
   getMentorShifts,
+  findMentor,
 }

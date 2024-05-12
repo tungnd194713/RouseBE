@@ -30,32 +30,32 @@ const mentorSchema = new Schema({
   },
   weekdays: {
     monday: {
-      start_hour: Date,
-      end_hour: Date,
+      start_hour: Number,
+      end_hour: Number,
     },
     tuesday: {
-      start_hour: Date,
-      end_hour: Date,
+      start_hour: Number,
+      end_hour: Number,
     },
     wednesday: {
-      start_hour: Date,
-      end_hour: Date,
+      start_hour: Number,
+      end_hour: Number,
     },
     thursday: {
-      start_hour: Date,
-      end_hour: Date,
+      start_hour: Number,
+      end_hour: Number,
     },
     friday: {
-      start_hour: Date,
-      end_hour: Date,
+      start_hour: Number,
+      end_hour: Number,
     },
     saturday: {
-      start_hour: Date,
-      end_hour: Date,
+      start_hour: Number,
+      end_hour: Number,
     },
     sunday: {
-      start_hour: Date,
-      end_hour: Date,
+      start_hour: Number,
+      end_hour: Number,
     }
   }
 },
@@ -63,6 +63,18 @@ const mentorSchema = new Schema({
   timestamps: true,
 }
 );
+
+mentorSchema.virtual('ratings', {
+  ref: 'MentorRating',
+  localField: '_id',
+  foreignField: 'mentor',
+});
+
+mentorSchema.virtual('shifts', {
+  ref: 'MentorShift',
+  localField: '_id',
+  foreignField: 'mentor',
+});
 
 mentorSchema.plugin(toJSON);
 mentorSchema.plugin(paginate);
