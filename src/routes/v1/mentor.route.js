@@ -7,6 +7,8 @@ const { mentorController } = require('../../controllers');
 
 const router = express.Router();
 
+router.get('/seed', auth(), mentorController.seedMentor);
+router.get('/profile/', auth(), mentorController.getProfile);
 router.post('/profile/', auth(), mentorController.updateProfile);
 router.post('/shifts/list', auth(), mentorController.getMentorShifts);
 router.post('/find', auth(), mentorController.findMentor);
