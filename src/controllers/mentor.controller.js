@@ -27,10 +27,28 @@ const findMentor = catchAsync(async (req, res) => {
   res.status(httpStatus.OK).send(data);
 });
 
+const acceptMentorShift = catchAsync(async (req, res) => {
+  const data = await mentorService.acceptMentorShift(req.user._id, req.params.mentorShiftId);
+  res.status(httpStatus.OK).send(data);
+});
+
+const rejectMentorShift = catchAsync(async (req, res) => {
+  const data = await mentorService.rejectMentorShift(req.user._id, req.params.mentorShiftId);
+  res.status(httpStatus.OK).send(data);
+});
+
+const showCourse = catchAsync(async (req, res) => {
+  const data = await mentorService.showCourse(req.user._id, req.params.courseId);
+  res.status(httpStatus.OK).send(data);
+});
+
 module.exports = {
 	seedMentor,
 	getProfile,
 	updateProfile,
   getMentorShifts,
   findMentor,
+	acceptMentorShift,
+	rejectMentorShift,
+	showCourse,
 }

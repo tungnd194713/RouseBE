@@ -1,4 +1,4 @@
-const { MentorShift, Mentor, User } = require('../models');
+const { MentorShift, Mentor, User, Course } = require('../models');
 const ApiError = require('../utils/ApiError');
 const httpStatus = require('http-status');
 const mongoose = require('mongoose');
@@ -142,15 +142,54 @@ const getMentorShifts = async (userId, params, options) => {
   if (!mentor) throw new ApiError(httpStatus.BAD_REQUEST, 'Not a mentor');
 
   const filter = {
-    mentor: mentor._id || mentor.id,
+    mentor: mentor._id,
   }
-  if (params.is_finished !== null) {
-    filter.is_finished = params.is_finished;
-  }
+	if (params.status) {
+		filter.status = params.status;
+	}
   const queryOptions = {
-    ...options
+    ...options,
+		populate: 'user course'
   }
   return MentorShift.paginate(filter, queryOptions)
+}
+
+const acceptMentorShift = async (userId, mentorShiftId) => {
+	const mentor = await Mentor.findOne({ user: userId });
+  if (!mentor) throw new ApiError(httpStatus.BAD_REQUEST, 'Not a mentor');
+
+	const mentorShift = await MentorShift.findOne({ mentor: mentor._id, _id: mentorShiftId });
+  if (!mentorShift) throw new ApiError(httpStatus.BAD_REQUEST, 'Not a mentor');
+
+	mentorShift.status = 2;
+	mentorShift.date_start = Date.now();
+	await mentorShift.save();
+
+	return 'Shift accepted!';
+}
+
+const rejectMentorShift = async (userId, mentorShiftId) => {
+	const mentor = await Mentor.findOne({ user: userId });
+  if (!mentor) throw new ApiError(httpStatus.BAD_REQUEST, 'Not a mentor');
+
+	const mentorShift = await MentorShift.findOne({ mentor: mentor._id, _id: mentorShiftId });
+  if (!mentorShift) throw new ApiError(httpStatus.BAD_REQUEST, 'Not a mentor');
+
+	mentorShift.status = 4;
+	await mentorShift.save();
+
+	return 'Shift rejected!';
+}
+
+const showCourse = async (userId, courseId) => {
+  const mentor = await Mentor.findOne({ user: userId });
+  if (!mentor) throw new ApiError(httpStatus.BAD_REQUEST, 'Not a mentor');
+
+	const mentorShift = await MentorShift.findOne({ mentor: mentor._id, course: courseId });
+  if (!mentorShift) throw new ApiError(httpStatus.BAD_REQUEST, 'Not authorized');
+
+  const course = await Course.findById(courseId).populate('modules skill_tags.skill');
+  return course;
 }
 
 module.exports = {
@@ -159,5 +198,8 @@ module.exports = {
 	getProfile,
   updateProfile,
   getMentorShifts,
+	acceptMentorShift,
+	rejectMentorShift,
+	showCourse,
 };
 
