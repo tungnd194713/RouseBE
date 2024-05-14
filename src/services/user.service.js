@@ -1,5 +1,5 @@
 const httpStatus = require('http-status');
-const { User, UserProfile, Job, JobEducation, CertificateSubjects, CollegeSubjects, JobRequirement, Subject, Certificate, Major, CandidateApply, Course, UserRoadMap, Module, Discussion, Note, Mentor, MentorShift } = require('../models');
+const { User, UserProfile, Job, JobEducation, CertificateSubjects, CollegeSubjects, JobRequirement, Subject, Certificate, Major, CandidateApply, Course, UserRoadMap, Module, Discussion, Note, Mentor, MentorShift, MentorRating } = require('../models');
 const ApiError = require('../utils/ApiError');
 
 const convertHourToNumber = (hourString) => {
@@ -1207,6 +1207,19 @@ const requestMentor = async (userId, courseId, body) => {
   }
 }
 
+const addMentorRating = async (userId, courseId, mentorId, body) => {
+  const mentorShift = await MentorShift.findOne({ user: userId, course: courseId, mentor: mentorId });
+  if (!mentorShift) throw new ApiError(httpStatus.BAD_REQUEST, 'Shift not found');
+
+  const rating = await MentorRating.create({
+    user: userId,
+    mentor: mentorId,
+    ...body,
+  })
+
+  return rating;
+}
+
 module.exports = {
   createUser,
   queryUsers,
@@ -1228,4 +1241,5 @@ module.exports = {
   watchedModule,
 	unlockRoadmapCourse,
   requestMentor,
+  addMentorRating,
 };

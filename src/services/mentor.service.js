@@ -73,6 +73,19 @@ const convertHourToNumber = (hourString) => {
   return hour + minute / 60;
 }
 
+const getWeekdayName = () => {
+  const daysOfWeek = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+  const dayIndex = new Date().getDay();
+  return daysOfWeek[dayIndex];
+}
+
+const getCurrentHour = () => {
+  const now = new Date();
+  const hour = now.getHours().toString().padStart(2, '0');
+  const minute = now.getMinutes().toString().padStart(2, '0');
+  return convertHourToNumber(`${hour}:${minute}`);
+}
+
 const findMentor = async (params) => {
   const query = {
     start_working_date: { $lte: Date.now() },
@@ -107,7 +120,7 @@ const findMentor = async (params) => {
 }
 
 const getProfile = async (userId) => {
-	return Mentor.findOne({ user: userId });
+	return Mentor.findOne({ user: userId }).populate('ratings');
 }
 
 const updateProfile = async (userId, data) => {
@@ -147,6 +160,14 @@ const getMentorShifts = async (userId, params, options) => {
 	if (params.status) {
 		filter.status = params.status;
 	}
+  if (params.is_today) {
+    filter[`weekdays.${getWeekdayName()}.start_hour`] = { $lte: getCurrentHour() };
+    filter[`weekdays.${getWeekdayName()}.end_hour`] = { $gte: getCurrentHour() };
+  }
+  if (params.day) {
+    filter[`weekdays.${params.day}.start_hour`] = { $ne: null };
+    filter[`weekdays.${params.day}.end_hour`] = { $ne: null };
+  }
   const queryOptions = {
     ...options,
 		populate: 'user course'
