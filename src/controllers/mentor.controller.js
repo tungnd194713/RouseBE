@@ -42,6 +42,21 @@ const showCourse = catchAsync(async (req, res) => {
   res.status(httpStatus.OK).send(data);
 });
 
+const updateShift = catchAsync(async (req, res) => {
+  const data = await mentorService.updateShift(req.user._id, req.body);
+  res.status(httpStatus.OK).send(data);
+});
+
+const deleteShift = catchAsync(async (req, res) => {
+  const data = await mentorService.deleteShift(req.user._id, req.params.weekday);
+  res.status(httpStatus.OK).send(data);
+});
+
+const getRatingList = catchAsync(async (req, res) => {
+  const data = await mentorService.getRatingList(req.user._id, req.body, req.params);
+  res.status(httpStatus.OK).send(data);
+});
+
 module.exports = {
 	seedMentor,
 	getProfile,
@@ -51,4 +66,7 @@ module.exports = {
 	acceptMentorShift,
 	rejectMentorShift,
 	showCourse,
+	updateShift,
+	deleteShift,
+	getRatingList,
 }

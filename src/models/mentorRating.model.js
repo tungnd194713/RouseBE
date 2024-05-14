@@ -11,6 +11,14 @@ const mentorRatingSchema = new Schema({
     type: Schema.Types.ObjectId,
     ref: 'User'
   },
+	mentorShift: {
+		type: Schema.Types.ObjectId,
+    ref: 'MentorShift'
+	},
+	course: {
+		type: Schema.Types.ObjectId,
+    ref: 'Course'
+	},
   rating_star: Number,
   rating_content: String,
 },

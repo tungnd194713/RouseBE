@@ -15,5 +15,8 @@ router.post('/find', auth(), mentorController.findMentor);
 router.get('/accept-shift/:mentorShiftId', auth(), mentorController.acceptMentorShift);
 router.get('/reject-shift/:mentorShiftId', auth(), mentorController.rejectMentorShift);
 router.get('/show-course/:courseId', auth(), mentorController.showCourse);
+router.post('/update-shift/', auth(), mentorController.updateShift);
+router.delete('/delete-shift/:weekday', auth(), mentorController.deleteShift);
+router.post('/ratings/list', auth(), mentorController.getRatingList);
 
 module.exports = router;

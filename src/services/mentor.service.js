@@ -1,4 +1,4 @@
-const { MentorShift, Mentor, User, Course } = require('../models');
+const { MentorShift, Mentor, User, Course, MentorRating } = require('../models');
 const ApiError = require('../utils/ApiError');
 const httpStatus = require('http-status');
 const mongoose = require('mongoose');
@@ -161,12 +161,12 @@ const getMentorShifts = async (userId, params, options) => {
 		filter.status = params.status;
 	}
   if (params.is_today) {
-    filter[`weekdays.${getWeekdayName()}.start_hour`] = { $lte: getCurrentHour() };
-    filter[`weekdays.${getWeekdayName()}.end_hour`] = { $gte: getCurrentHour() };
+    filter[`shift_days.${getWeekdayName()}.start_hour`] = { $lte: getCurrentHour() };
+    filter[`shift_days.${getWeekdayName()}.end_hour`] = { $gte: getCurrentHour() };
   }
   if (params.day) {
-    filter[`weekdays.${params.day}.start_hour`] = { $ne: null };
-    filter[`weekdays.${params.day}.end_hour`] = { $ne: null };
+    filter[`shift_days.${params.day}.start_hour`] = { $ne: null };
+    filter[`shift_days.${params.day}.end_hour`] = { $ne: null };
   }
   const queryOptions = {
     ...options,
@@ -213,6 +213,70 @@ const showCourse = async (userId, courseId) => {
   return course;
 }
 
+const updateShift = async (userId, shift) => {
+  const mentor = await Mentor.findOne({ user: userId });
+  if (!mentor) throw new ApiError(httpStatus.BAD_REQUEST, 'Not a mentor');
+
+	const daysOfWeek = [
+		"monday",
+		"tuesday",
+		"wednesday",
+		"thursday",
+		"friday",
+		"saturday",
+		"sunday"
+	];
+
+	if (!daysOfWeek.includes(shift.weekday)) throw new ApiError(httpStatus.BAD_REQUEST, 'Invalid shift');
+
+	mentor.weekdays[shift.weekday] = {
+		start_hour: shift.start_hour,
+		end_hour: shift.end_hour,
+	}
+
+	await mentor.save();
+  return mentor;
+}
+
+const deleteShift = async (userId, weekday) => {
+	const mentor = await Mentor.findOne({ user: userId });
+  if (!mentor) throw new ApiError(httpStatus.BAD_REQUEST, 'Not a mentor');
+
+	const daysOfWeek = [
+		"monday",
+		"tuesday",
+		"wednesday",
+		"thursday",
+		"friday",
+		"saturday",
+		"sunday"
+	];
+
+	if (!daysOfWeek.includes(weekday)) throw new ApiError(httpStatus.BAD_REQUEST, 'Invalid shift');
+
+	mentor.weekdays[weekday] = {};
+
+	await mentor.save();
+  return mentor;
+}
+
+const getRatingList = async (userId, params, options) => {
+	const mentor = await Mentor.findOne({ user: userId });
+  if (!mentor) throw new ApiError(httpStatus.BAD_REQUEST, 'Not a mentor');
+
+	const filter = {
+    mentor: userId,
+  }
+	if (params.rating_star) {
+		filter.rating_star = params.rating_star;
+	}
+  const queryOptions = {
+    ...options,
+		populate: 'user course'
+  }
+  return MentorRating.paginate(filter, queryOptions)
+}
+
 module.exports = {
   findMentor,
 	seedMentor,
@@ -222,5 +286,8 @@ module.exports = {
 	acceptMentorShift,
 	rejectMentorShift,
 	showCourse,
+	updateShift,
+	deleteShift,
+	getRatingList,
 };
 
