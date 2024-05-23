@@ -1,22 +1,21 @@
 const mongoose = require('mongoose');
-const Schema = mongoose.Schema;
 const { toJSON, paginate } = require('./plugins');
 
-const mentorRatingSchema = new Schema({
+const mentorRatingSchema = mongoose.Schema({
   mentor: {
-    type: Schema.Types.ObjectId,
+    type: mongoose.SchemaTypes.ObjectId,
     ref: 'Mentor',
   },
   user: {
-    type: Schema.Types.ObjectId,
+    type: mongoose.SchemaTypes.ObjectId,
     ref: 'User'
   },
 	mentorShift: {
-		type: Schema.Types.ObjectId,
+		type: mongoose.SchemaTypes.ObjectId,
     ref: 'MentorShift'
 	},
 	course: {
-		type: Schema.Types.ObjectId,
+		type: mongoose.SchemaTypes.ObjectId,
     ref: 'Course'
 	},
   rating_star: Number,

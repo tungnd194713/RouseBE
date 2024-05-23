@@ -98,23 +98,22 @@ const findMentor = async (params) => {
       }
     },
   }
-  query[`weekdays.${params.day}.start_hour`] = { $lte: convertHourToNumber(params.start_hour) };
-  query[`weekdays.${params.day}.end_hour`] = { $gte: convertHourToNumber(params.end_hour) };
+  if (params.day) {
+    query[`weekdays.${params.day}.start_hour`] = { $ne: null };
+    query[`weekdays.${params.day}.end_hour`] = { $ne: null };
+    if (params.start_hour) {
+      query[`weekdays.${params.day}.start_hour`] = { $lte: convertHourToNumber(params.start_hour) };
+    }
+    if (params.end_hour) {
+      query[`weekdays.${params.day}.end_hour`] = { $gte: convertHourToNumber(params.end_hour) };
+    }
+  }
 
-  const mentors = await Mentor.find(query).populate('shifts ratings');
-  mentors.forEach(mentor => {
-    let totalRating = 0;
-    let ratingCount = 0;
 
-    mentor.ratings.forEach(rating => {
-      totalRating += rating.rating_star;
-      ratingCount++;
-    });
-
-    const averageRating = ratingCount > 0 ? totalRating / ratingCount : 0;
-
-    mentor.averageRating = averageRating; // Assign average rating to mentor object
-  });
+  let mentors = await Mentor.find(query).populate('shifts ratings');
+  if (params.avgRating) {
+    mentors = mentors.filter((item) => item.avgRating >= params.avgRating)
+  }
 
   return mentors;
 }
@@ -265,7 +264,7 @@ const getRatingList = async (userId, params, options) => {
   if (!mentor) throw new ApiError(httpStatus.BAD_REQUEST, 'Not a mentor');
 
 	const filter = {
-    mentor: userId,
+    mentor: mentor._id,
   }
 	if (params.rating_star) {
 		filter.rating_star = params.rating_star;

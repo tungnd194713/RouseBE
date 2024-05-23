@@ -2,6 +2,7 @@ const httpStatus = require('http-status');
 const { roadmapService } = require('../services');
 const catchAsync = require('../utils/catchAsync');
 const ApiError = require('../utils/ApiError');
+const { Instructor, User } = require('../models');
 
 const fetchCategories = catchAsync(async (req, res) => {
   const roadmap = await roadmapService.fetchCategories();
@@ -137,7 +138,7 @@ const removeCourseFromRoadmap = catchAsync(async (req, res) => {
 
 const createEducationModule = catchAsync(async (req, res) => {
   try {
-    const result = await roadmapService.createEducationModule(req.params.jobEducationId, req.params.courseId, req.body);
+    const result = await roadmapService.createEducationModule(req.params.courseId, req.body);
     res.status(httpStatus.OK).send(result);
   } catch (e) {
     throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, e);
@@ -189,6 +190,169 @@ const sendEducationRoadmap = catchAsync(async (req, res) => {
   }
 });
 
+const getListInstructor = catchAsync(async (req, res) => {
+  try {
+    const result = await roadmapService.getListInstructor(req.body, req.query);
+    res.status(httpStatus.OK).send(result);
+  } catch (e) {
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, e);
+  }
+});
+
+const createInstructorCourse = catchAsync(async (req, res) => {
+  try {
+    const result = await roadmapService.createInstructorCourse(req.params.jobEducationId, req.body);
+    res.status(httpStatus.OK).send(result);
+  } catch (e) {
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, e);
+  }
+});
+
+const getListInstructorCourse = catchAsync(async (req, res) => {
+  const body = {...req.body}
+  const user = await User.findById(req.user._id);
+  if (user.role === 'instructor') {
+    const instructor = await Instructor.findOne({ user: user._id || user.id });
+    body.instructor = instructor.id || instructor._id;
+  }
+  try {
+    const result = await roadmapService.getListInstructorCourse(body, req.query);
+    res.status(httpStatus.OK).send(result);
+  } catch (e) {
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, e);
+  }
+});
+
+const getInstructorCourseById = catchAsync(async (req, res) => {
+  try {
+    const result = await roadmapService.getInstructorCourseById(req.user._id, req.params.instructorCourseId);
+    res.status(httpStatus.OK).send(result);
+  } catch (e) {
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, e);
+  }
+});
+
+const signAsComplete = catchAsync(async (req, res) => {
+  try {
+    const result = await roadmapService.signAsComplete(req.user._id, req.params.instructorCourseId);
+    res.status(httpStatus.OK).send(result);
+  } catch (e) {
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, e);
+  }
+});
+
+const goToFix = catchAsync(async (req, res) => {
+  try {
+    const result = await roadmapService.goToFix(req.user._id, req.params.instructorCourseId);
+    res.status(httpStatus.OK).send(result);
+  } catch (e) {
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, e);
+  }
+});
+
+const getListInstructorCourseByEducation = catchAsync(async (req, res) => {
+  try {
+    const body = {
+      ...req.body,
+      jobEducation: req.params.jobEducationId,
+    }
+    const result = await roadmapService.getListInstructorCourse(body, req.query);
+    res.status(httpStatus.OK).send(result);
+  } catch (e) {
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, e);
+  }
+});
+
+const addReviewToInstructorCourse = catchAsync(async (req, res) => {
+  try {
+    const result = await roadmapService.addReviewToInstructorCourse(req.user._id, req.params.instructorCourseId, req.body);
+    res.status(httpStatus.OK).send(result);
+  } catch (e) {
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, e);
+  }
+});
+
+const updateReviewOfInstructorCourse = catchAsync(async (req, res) => {
+  try {
+    const result = await roadmapService.updateReviewOfInstructorCourse(req.user._id, req.params.instructorCourseId, req.params.reviewId, req.body);
+    res.status(httpStatus.OK).send(result);
+  } catch (e) {
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, e);
+  }
+});
+
+const createNewTestToCourse = catchAsync(async (req, res) => {
+  try {
+    const result = await roadmapService.createNewTestToCourse(req.params.courseId, req.body);
+    res.status(httpStatus.OK).send(result);
+  } catch (e) {
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, e);
+  }
+});
+
+const createNewQuestionToTest = catchAsync(async (req, res) => {
+  try {
+    const result = await roadmapService.createNewQuestionToTest(req.params.testId, req.body);
+    res.status(httpStatus.OK).send(result);
+  } catch (e) {
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, e);
+  }
+});
+
+const getTestById = catchAsync(async (req, res) => {
+  try {
+    const result = await roadmapService.getTestById(req.params.testId);
+    res.status(httpStatus.OK).send(result);
+  } catch (e) {
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, e);
+  }
+});
+
+const updateTestById = catchAsync(async (req, res) => {
+  try {
+    const result = await roadmapService.updateTestById(req.params.testId, req.body);
+    res.status(httpStatus.OK).send(result);
+  } catch (e) {
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, e);
+  }
+});
+
+const deleteTestById = catchAsync(async (req, res) => {
+  try {
+    const result = await roadmapService.deleteTestById(req.params.testId);
+    res.status(httpStatus.OK).send(result);
+  } catch (e) {
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, e);
+  }
+});
+
+const updateQuestionById = catchAsync(async (req, res) => {
+  try {
+    const result = await roadmapService.updateQuestionById(req.params.questionId, req.body);
+    res.status(httpStatus.OK).send(result);
+  } catch (e) {
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, e);
+  }
+});
+
+const deleteQuestionById = catchAsync(async (req, res) => {
+  try {
+    const result = await roadmapService.deleteQuestionById(req.params.questionId);
+    res.status(httpStatus.OK).send(result);
+  } catch (e) {
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, e);
+  }
+});
+
+const updateInstructorCourseStatus = catchAsync(async (req, res) => {
+  try {
+    const result = await roadmapService.updateInstructorCourseStatus(req.params.instructorCourseId, req.body);
+    res.status(httpStatus.OK).send(result);
+  } catch (e) {
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, e);
+  }
+});
+
 module.exports = {
   fetchCategories,
   fetchSpecCategories,
@@ -213,4 +377,21 @@ module.exports = {
   updateEducationModule,
   checkEducationRoadmap,
   sendEducationRoadmap,
+  getListInstructor,
+  createInstructorCourse,
+  getListInstructorCourse,
+  addReviewToInstructorCourse,
+  updateReviewOfInstructorCourse,
+  updateInstructorCourseStatus,
+  getListInstructorCourseByEducation,
+  createNewTestToCourse,
+  createNewQuestionToTest,
+  getTestById,
+  updateTestById,
+  deleteTestById,
+  updateQuestionById,
+  deleteQuestionById,
+  getInstructorCourseById,
+  signAsComplete,
+  goToFix,
 };

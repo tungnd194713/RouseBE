@@ -2,7 +2,7 @@
 const httpStatus = require('http-status');
 const mongoose = require('mongoose');
 const ApiError = require('../utils/ApiError');
-const { RoadMap, Milestone, Category, SpecCategory, RoadmapTemplate, UserRoadMap, ModuleProgress, JobEducation, Course, JobRequirement, CertificateSubjects, CollegeSubjects, Module } = require('../models');
+const { RoadMap, Milestone, Category, SpecCategory, RoadmapTemplate, UserRoadMap, ModuleProgress, JobEducation, Course, JobRequirement, CertificateSubjects, CollegeSubjects, Module, InstructorCourse, Instructor, Test, Question, AnswerSheet } = require('../models');
 const { convertRequirements, skillLevelCompare } = require('../helpers/roadmap.helper');
 
 async function findRoadmap(categoryId, subCategoryId, mastery) {
@@ -204,15 +204,20 @@ const getEducationRequests = async (options, params) => {
 const getEducationCourses = async (jobEducationId) => {
   const certificateObjects = await CertificateSubjects.find({}).populate('subject_objects.subject');
   const majorObjects = await CollegeSubjects.find({}).populate('subject_objects.subject');
-  const jobEducation = await JobEducation.findById(jobEducationId).populate('job company courses').populate({ path: 'courses', populate: { path: 'skill_tags.skill' } });
+  const jobEducation = await JobEducation.findById(jobEducationId).populate('job company');
   if (!jobEducation) {
     throw new ApiError(httpStatus.NOT_FOUND, 'Request not found');
   }
+  const courseIds = jobEducation.courses.map((item) => item._id || item.id);
+  const instructorCourses = await InstructorCourse.find({ jobEducation: jobEducationId });
+  const iCourseIds = instructorCourses.map((item) => item.course);
+  const courses = await Course.find({ _id: { $in: [...courseIds, ...iCourseIds] } }).populate('skill_tags.skill').populate({ path: 'instructorCourse', populate: { path: 'instructor' } });
   const jobRequirement = await JobRequirement.find({ job: jobEducation.job }).populate('skills majors certificates colleges');
   const convertedRequirements = convertRequirements(jobRequirement, certificateObjects, majorObjects);
 
   return {
     ...jobEducation.toObject(),
+    allCourses: courses,
     convertedRequirements,
   };
 }
@@ -336,11 +341,7 @@ const getCourseDetail = async (jobEducationId, courseId) => {
 	};
 }
 
-const createEducationModule = async (jobEducationId, courseId, body) => {
-	const jobEducation = await JobEducation.findById(jobEducationId);
-
-  if (!jobEducation) throw new ApiError(httpStatus.NOT_FOUND, 'Request not found');
-
+const createEducationModule = async (courseId, body) => {
   const course = await Course.findById(courseId);
 
 	if (!course) throw new ApiError(httpStatus.NOT_FOUND, 'Course not found');
@@ -419,6 +420,280 @@ const updateEducationModule = async (jobEducationId, courseId, moduleId, body) =
   return 'Save success';
 }
 
+const getListInstructor = async (params, options) => {
+  // params = {
+  //   tag: subjectId,
+  // }
+  const filter = {}
+	if (params.tag) {
+		filter.specialized_fields = {
+      $elemMatch: {
+        subject: params.tag, // Filter by subject within specialized_fields array
+      }
+    };
+	}
+  const queryOptions = {
+    ...options,
+		populate: 'user specialized_fields.subject'
+  }
+  return Instructor.paginate(filter, queryOptions)
+}
+
+const createInstructorCourse = async (jobEducationId, body) => {
+  const jobEducation = await JobEducation.findById(jobEducationId)
+
+  if (!jobEducation) throw new ApiError(httpStatus.NOT_FOUND, 'Request not found');
+
+  // body = {
+  //   title,
+  //   description,
+  //   point_cost
+  //   estimated_time,
+  //   skill_tags,
+  //   instructor,
+  //   deadline,
+  //   requirement,
+  // }
+
+  const courseParams = {
+    title: body.title,
+    description: body.description,
+    point_cost: body.point_cost,
+    estimated_time: body.estimated_time,
+    skill_tags: JSON.parse(body.tags),
+  }
+
+  const createdCourse = await Course.create(courseParams);
+
+  if (!createdCourse)  throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'Something wrong');
+
+  const instructorCourseParams = {
+    jobEducation: jobEducationId,
+    course: createdCourse.id || createdCourse._id,
+    instructor: body.instructor,
+    requirement: body.requirement,
+    deadline: body.deadline,
+  }
+
+  return InstructorCourse.create(instructorCourseParams);
+}
+
+const getListInstructorCourse = async (params, options) => {
+  const filter = {}
+	if (params.jobEducation) {
+		filter.jobEducation = params.jobEducation
+	}
+  if (params.instructor) {
+		filter.instructor = params.instructor
+  }
+  if (params.status) {
+		filter.status = params.status
+  }
+  if (params.is_read !== null && params.is_read !== undefined) {
+		filter.is_read = params.is_read
+  }
+  if (params.is_done !== null && params.is_done !== undefined) {
+		filter.is_done = params.is_done
+  }
+  const queryOptions = {
+    ...options,
+		populate: 'course,course.skill_tags.skill,jobEducation,instructor'
+  }
+  return InstructorCourse.paginate(filter, queryOptions)
+}
+
+const getInstructorCourseById = async (userId, instructorCourseId) => {
+  const instructor = await Instructor.findOne({ user: userId });
+
+  if (!instructor) throw new ApiError(httpStatus.NOT_FOUND, 'Instructor not found');
+
+  const instructorCourse = await InstructorCourse.findOne({ _id: instructorCourseId, instructor: instructor.id || instructor._id })
+                                                 .populate('course jobEducation instructor')
+                                                 .populate({ path: 'course', populate: { path: 'skill_tags.skill', model: 'Subject' } })
+                                                 .populate({ path: 'course', populate: { path: 'modules', model: 'Module' } })
+                                                 .populate({ path: 'course', populate: { path: 'tests', model: 'Test' } });
+
+  if (!instructorCourse.is_read) {
+    instructorCourse.is_read = true;
+    await instructorCourse.save();
+  }
+
+  return instructorCourse;
+}
+
+const signAsComplete = async (userId, instructorCourseId) => {
+  const instructor = await Instructor.findOne({ user: userId });
+
+  if (!instructor) throw new ApiError(httpStatus.NOT_FOUND, 'Instructor not found');
+
+  const instructorCourse = await InstructorCourse.findOne({ _id: instructorCourseId, instructor: instructor.id || instructor._id })
+
+  instructorCourse.is_done = true;
+  instructorCourse.status = 2;
+  await instructorCourse.save();
+
+  return instructorCourse;
+}
+
+const goToFix = async (userId, instructorCourseId) => {
+  const instructor = await Instructor.findOne({ user: userId });
+
+  if (!instructor) throw new ApiError(httpStatus.NOT_FOUND, 'Instructor not found');
+
+  const instructorCourse = await InstructorCourse.findOne({ _id: instructorCourseId, instructor: instructor.id || instructor._id })
+
+  instructorCourse.is_done = false;
+  instructorCourse.status = 1;
+  await instructorCourse.save();
+
+  return instructorCourse;
+}
+
+const addReviewToInstructorCourse = async (userId, instructorCourseId, body) => {
+  const instructorCourse = await InstructorCourse.findById(instructorCourseId)
+
+  if (!instructorCourse) throw new ApiError(httpStatus.NOT_FOUND, 'Course not found');
+
+  const reviewParams = {
+    content: body.content,
+    created_by: userId,
+  }
+
+  PersonModel.update(
+    { _id: instructorCourseId },
+    { $push: { reviews: reviewParams } },
+  );
+
+  return 'Review added'
+}
+
+const updateReviewOfInstructorCourse = async (userId, instructorCourseId, reviewId, body) => {
+  const instructorCourse = await InstructorCourse.findById(instructorCourseId)
+
+  if (!instructorCourse) throw new ApiError(httpStatus.NOT_FOUND, 'Course not found');
+
+  const review = instructorCourse.reviews.id(reviewId);
+  if (!review) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'Review not found');
+  }
+
+  if (body.content) {
+    review.content = body.content;
+  }
+  if (body.is_resolved) {
+    review.is_resolved = body.is_resolved;
+  }
+
+  await instructorCourse.save();
+
+  return 'Review updated'
+}
+
+const updateInstructorCourseStatus = async (instructorCourseId, body) => {
+  const instructorCourse = await InstructorCourse.findById(instructorCourseId)
+
+  if (!instructorCourse) throw new ApiError(httpStatus.NOT_FOUND, 'Course not found');
+
+  if (instructorCourse.status !== 2) {
+    instructorCourse.status = body.status;
+  }
+
+  await instructorCourse.save()
+
+  return 'Status updated!';
+}
+
+const createNewTestToCourse = async (courseId, body) => {
+  const course = await Course.findById(courseId);
+
+  if (!course) throw new ApiError(httpStatus.NOT_FOUND, 'Course not found');
+
+  const newTest = await Test.create(body);
+
+  course.tests.push(newTest._id || newTest.id);
+
+  await course.save();
+
+  return newTest._id || newTest.id;
+}
+
+const createNewQuestionToTest = async (testId, body) => {
+  const test = await Test.findById(testId);
+
+  if (!test) throw new ApiError(httpStatus.NOT_FOUND, 'Test not found');
+
+  const newQuestion = await Question.create(body);
+
+  test.questions.push(newQuestion._id || newQuestion.id);
+
+  await test.save();
+
+  return test;
+}
+
+const getTestById = async (testId) => {
+  // const test = await Test.findById(testId).populate({ path: 'questions', populate: { path: 'choices', model: 'Choice' } })
+  const test = await Test.findById(testId).populate({ path: 'questions', model: 'Question' })
+  if (!test) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'Test not found');
+  }
+  return test;
+};
+
+
+const updateTestById = async (testId, updateBody) => {
+  const test = await Test.findById(testId);
+  if (!test) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'Test not found');
+  }
+  Object.assign(test, updateBody);
+  await test.save();
+  return test;
+};
+
+/**
+ * Delete test by id
+ * @param {ObjectId} testId
+ * @returns {Promise<Test>}
+ */
+const deleteTestById = async (testId) => {
+  const test = await Test.findById(testId);
+  if (!test) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'Test not found');
+  }
+  await AnswerSheet.deleteMany({ testId });
+  await test.remove();
+  return test;
+};
+
+const updateQuestionById = async (questionId, updateBody) => {
+  const question = await Question.findById(questionId);
+  if (!question) {
+    throw new ApiError(httpStatus.NOT_FOUND, "Question not found");
+  }
+  //   if (updateBody.email && (await Question.isEmailTaken(updateBody.email, questionId))) {
+  //     throw new ApiError(httpStatus.BAD_REQUEST, 'Email already taken');
+  //   }
+  Object.assign(question, updateBody);
+  await question.save();
+  return question;
+};
+
+/**
+ * Delete question by id
+ * @param {ObjectId} questionId
+ * @returns {Promise<Question>}
+ */
+const deleteQuestionById = async (questionId) => {
+  const question = await Question.findById(questionId);
+  if (!question) {
+    throw new ApiError(httpStatus.NOT_FOUND, "Question not found");
+  }
+  await question.remove();
+  return question;
+};
+
+
 module.exports = {
   findRoadmap,
   buildRoadmap,
@@ -441,4 +716,20 @@ module.exports = {
   updateEducationModule,
   checkEducationRoadmap,
   sendEducationRoadmap,
+  getListInstructor,
+  createInstructorCourse,
+  getListInstructorCourse,
+  addReviewToInstructorCourse,
+  updateReviewOfInstructorCourse,
+  updateInstructorCourseStatus,
+  createNewTestToCourse,
+  createNewQuestionToTest,
+  getTestById,
+  updateTestById,
+  deleteTestById,
+  updateQuestionById,
+  deleteQuestionById,
+  getInstructorCourseById,
+  signAsComplete,
+  goToFix,
 };

@@ -32,6 +32,7 @@ router.post('/candidate-applies/:candidateApplyId/start-education', auth(), user
 router.get('/educations/current', auth(), userController.getCurrentEducation);
 router.post('/educations/courses/:courseId/unlock', auth(), userController.unlockRoadmapCourse);
 router.post('/educations/courses/:courseId/request-mentors', auth(), userController.requestMentor);
+router.post('/educations/rating-mentor', auth(), userController.addMentorRating);
 router.get('/educations/courses/:courseId/modules/:moduleId', auth(), userController.getUserModule);
 router.get('/educations/courses/:courseId/modules/:moduleId/watched', auth(), userController.watchedModule);
 router.post('/jobs/list/applied', auth(), userController.getAppliedJobs);

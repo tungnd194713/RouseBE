@@ -26,9 +26,27 @@ router.get('/education-requests/:jobEducationId/courses/:courseId', auth(), road
 router.post('/education-requests/:jobEducationId/courses/create', upload.none(), auth(), roadmapController.createEducationCourse);
 router.post('/education-requests/:jobEducationId/courses/:courseId', auth(), roadmapController.addExistingEducationCourse);
 router.delete('/education-requests/:jobEducationId/courses/:courseId', auth(), roadmapController.removeCourseFromRoadmap);
-router.post('/education-requests/:jobEducationId/courses/:courseId/modules/create', upload.none(), auth(), roadmapController.createEducationModule);
+// router.post('/education-requests/:jobEducationId/courses/:courseId/modules/create', upload.none(), auth(), roadmapController.createEducationModule);
 router.delete('/education-requests/:jobEducationId/courses/:courseId/modules/:moduleId', auth(), roadmapController.removeEducationModuleFromCourse);
 router.get('/education-requests/:jobEducationId/courses/:courseId/modules/:moduleId', auth(), roadmapController.getEducationModule);
 router.put('/education-requests/:jobEducationId/courses/:courseId/modules/:moduleId', auth(), roadmapController.updateEducationModule);
+router.post('/education-requests/instructor-list', auth(), roadmapController.getListInstructor);
+router.post('/education-requests/:jobEducationId/instructor-courses/create', auth(), roadmapController.createInstructorCourse);
+router.post('/education-requests/:jobEducationId/instructor-courses/', auth(), roadmapController.getListInstructorCourseByEducation);
+router.post('/education-requests/instructor-courses/list', auth(), roadmapController.getListInstructorCourse);
+router.post('/instructor-courses/:instructorCourseId/reviews/create', auth(), roadmapController.addReviewToInstructorCourse);
+router.post('/instructor-courses/courses/:courseId/modules/create', upload.none(), auth(), roadmapController.createEducationModule);
+router.post('/instructor-courses/courses/:courseId/tests/create', upload.none(), auth(), roadmapController.createNewTestToCourse);
+router.delete('/instructor-courses/tests/:testId/', auth(), roadmapController.deleteTestById);
+router.put('/instructor-courses/tests/:testId/', upload.none(), auth(), roadmapController.updateTestById);
+router.get('/instructor-courses/tests/:testId/', auth(), roadmapController.getTestById);
+router.post('/instructor-courses/tests/:testId/questions/create', upload.none(), auth(), roadmapController.createNewQuestionToTest);
+router.delete('/instructor-courses/questions/:questionId', auth(), roadmapController.deleteQuestionById);
+router.put('/instructor-courses/questions/:questionId', upload.none(), auth(), roadmapController.updateQuestionById);
+router.put('/instructor-courses/:instructorCourseId/reviews/:reviewId', auth(), roadmapController.updateReviewOfInstructorCourse);
+router.put('/instructor-courses/:instructorCourseId/update-status', auth(), roadmapController.updateInstructorCourseStatus);
+router.get('/instructor-courses/:instructorCourseId/', auth(), roadmapController.getInstructorCourseById);
+router.get('/instructor-courses/:instructorCourseId/sign-as-complete', auth(), roadmapController.signAsComplete);
+router.get('/instructor-courses/:instructorCourseId/go-to-fix', auth(), roadmapController.goToFix);
 
 module.exports = router;

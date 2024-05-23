@@ -52,10 +52,14 @@ const mentorShiftSchema = new Schema({
       start_hour: Number,
       end_hour: Number,
     },
-    day_of_week: {
-      type: String,
-    }
   },
+  day_of_week: {
+    type: String,
+  },
+  created_at: {
+    type: Date,
+    default: Date.now(),
+  }
 },
 {
   timestamps: true,

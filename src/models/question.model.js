@@ -16,12 +16,10 @@ const choiceSchema = new Schema({
 const questionSchema = new Schema({
     question: {
         type: String,
-        get: toInlineElement
     },
     choices: [choiceSchema],
     answer: {
-        type: String,
-        get: toInlineElement
+      type: String,
     },
     grade: Number,
 }, {
@@ -38,6 +36,18 @@ questionSchema.methods.getTrueChoiceArray = function () {
 questionSchema.methods.getFalseChoiceArray = function () {
     return this.choices.filter(c => !c.isTrue).map(c => String(c._id));
 }
+
+questionSchema.pre('remove', async function(next) {
+  try {
+    await mongoose.model('Test').updateMany(
+      { questions: this._id },
+      { $pull: { questions: this._id } }
+    );
+    next();
+  } catch (err) {
+    next(err);
+  }
+});
 
 questionSchema.plugin(paginate);
 

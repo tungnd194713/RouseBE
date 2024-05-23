@@ -1,10 +1,9 @@
 const mongoose = require('mongoose');
-const Schema = mongoose.Schema;
 const { toJSON, paginate } = require('./plugins');
 
-const mentorSchema = new Schema({
+const mentorSchema = mongoose.Schema({
   user: {
-    type: Schema.Types.ObjectId,
+    type: mongoose.SchemaTypes.ObjectId,
     ref: 'User'
   },
   mentor_name: String,
@@ -14,7 +13,7 @@ const mentorSchema = new Schema({
   biography: String,
   specialized_fields: [{
     subject: {
-      type: Schema.Types.ObjectId,
+      type: mongoose.SchemaTypes.ObjectId,
       ref: 'Subject'
     },
     level: {
@@ -61,6 +60,8 @@ const mentorSchema = new Schema({
 },
 {
   timestamps: true,
+  toObject: { getters: true, setters: true, virtual: true },
+  toJSON: { getters: true, setters: true, virtual: true },
 }
 );
 
@@ -74,6 +75,15 @@ mentorSchema.virtual('shifts', {
   ref: 'MentorShift',
   localField: '_id',
   foreignField: 'mentor',
+});
+
+mentorSchema.virtual('avgRating').get(function() {
+  if (this.ratings && this.ratings.length > 0) {
+    const totalRating = this.ratings.reduce((acc, rating) => acc + rating.rating_star, 0);
+    return totalRating / this.ratings.length;
+  } else {
+    return 0;
+  }
 });
 
 mentorSchema.plugin(toJSON);

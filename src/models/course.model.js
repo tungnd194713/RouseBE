@@ -37,25 +37,27 @@ const courseSchema = mongoose.Schema(
       required: true,
     },
     tests: [{
-      id: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Test"
-      },
-      index: {
-        type: Number,
-        required: true
-      },
-      _id: false
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Test"
     }],
   },
   {
     timestamps: true,
+    toObject: { getters: true, setters: true, virtual: true },
+    toJSON: { getters: true, setters: true, virtual: true },
   }
 );
 
 // add plugin that converts mongoose to json
 courseSchema.plugin(toJSON);
 courseSchema.plugin(paginate);
+
+courseSchema.virtual('instructorCourse', {
+  ref: 'InstructorCourse',
+  localField: '_id',
+  foreignField: 'course',
+  justOne: true,
+});
 
 /**
  * @typedef Course

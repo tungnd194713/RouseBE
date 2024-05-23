@@ -1,5 +1,6 @@
+const mongoose = require('mongoose');
 const httpStatus = require('http-status');
-const { User, UserProfile, Job, JobEducation, CertificateSubjects, CollegeSubjects, JobRequirement, Subject, Certificate, Major, CandidateApply, Course, UserRoadMap, Module, Discussion, Note, Mentor, MentorShift, MentorRating } = require('../models');
+const { User, UserProfile, Job, JobEducation, CertificateSubjects, CollegeSubjects, JobRequirement, Subject, Certificate, Major, CandidateApply, Course, UserRoadMap, Module, Discussion, Note, Mentor, MentorShift, MentorRating, Test, AnswerSheet } = require('../models');
 const ApiError = require('../utils/ApiError');
 
 const convertHourToNumber = (hourString) => {
@@ -929,11 +930,34 @@ const getCurrentEducation = async (userId) => {
   if (!userRoadmap) {
     throw new ApiError(httpStatus.NOT_FOUND, 'Roadmap not found');
   }
-  const courseIds = userRoadmap.roadmap_milestone.map((item) => item.course.id || item.course._id);
-  const mentorShifts = await MentorShift.find({
-    user: userId,
-    course: { $in: courseIds },
-  }).populate('mentor')
+  const courseIds = userRoadmap.roadmap_milestone.map((item) => new mongoose.Types.ObjectId(item.course._id));
+  const mentorShifts = await MentorShift.aggregate([
+    {
+      $match: {
+        user: userId,
+        course: { $in: courseIds }
+      }
+    },
+    {
+      $lookup: {
+        from: 'mentors', // name of the Mentor collection
+        localField: 'mentor',
+        foreignField: '_id',
+        as: 'mentor'
+      }
+    },
+    {
+      $unwind: '$mentor'
+    },
+    {
+      $lookup: {
+        from: 'mentorratings', // name of the MentorRating collection
+        localField: 'mentor._id',
+        foreignField: 'mentor',
+        as: 'mentor.ratings'
+      }
+    }
+  ]);
   const job = await Job.findById(userRoadmap.job).select('id title');
   if (!job) {
     throw new ApiError(httpStatus.NOT_FOUND, 'Job not found');
@@ -943,12 +967,20 @@ const getCurrentEducation = async (userId) => {
     throw new ApiError(httpStatus.NOT_FOUND, 'Job education not found');
   }
   const roadmapProgress = getUserRoadmapProgress(userRoadmap);
+
+  const courses = userRoadmap.roadmap_milestone.map((item) => item.course);
+  const testIds = courses.map((item) => item.tests).flat();
+  const tests = await Test.find({ _in: { $in: testIds } });
+  const answersheets = await AnswerSheet.find({ testId: { $in: testIds }, user: userId })
+
   return {
     userRoadmap: userRoadmap.toObject(),
     job: job.toObject(),
     jobEducation: jobEducation.toObject(),
     roadmapProgress,
     mentorShifts,
+    tests,
+    answersheets,
   }
 }
 
@@ -1207,17 +1239,75 @@ const requestMentor = async (userId, courseId, body) => {
   }
 }
 
-const addMentorRating = async (userId, courseId, mentorId, body) => {
-  const mentorShift = await MentorShift.findOne({ user: userId, course: courseId, mentor: mentorId });
+const addMentorRating = async (userId, body) => {
+  const mentorShift = await MentorShift.findOne({ user: userId, course: body.course, mentor: body.mentor });
   if (!mentorShift) throw new ApiError(httpStatus.BAD_REQUEST, 'Shift not found');
 
-  const rating = await MentorRating.create({
-    user: userId,
-    mentor: mentorId,
-    ...body,
-  })
+  let rating = await MentorRating.findOne({ user: userId, mentor: body.mentor, course: body.course, mentorShift: body.mentorShift });
+  if (rating) {
+    if (body.is_remove) {
+      await rating.remove();
+      return 'removed';
+    } else {
+      rating.rating_star = body.rating_star;
+      rating.rating_content = body.rating_content;
+      await rating.save();
+    }
+  } else {
+    rating = await MentorRating.create({
+      user: userId,
+      ...body,
+    });
+  }
 
   return rating;
+}
+
+const submitAnswerSheet = async (userId, userRoadmapId, courseId, answerSheetId, body) => {
+  const userRoadmap = await UserRoadMap.findOne({ user: userId, is_finished: false, _id: userRoadmapId });
+  if (!userRoadmap) throw new ApiError(httpStatus.FORBIDDEN, "Roadmap not found.");
+  if (body.isFinished) body.finishedAt = new Date();
+  const answerSheet = await AnswerSheet.findById(answerSheetId);
+  if (answerSheet.isFinished)
+    throw new ApiError(httpStatus.FORBIDDEN, "This answer was submitted.");
+
+  Object.assign(answerSheet, body);
+  await answerSheet.save();
+
+  // check completed course
+  const course = await Course.findById(courseId);
+  if (!course) throw new ApiError(httpStatus.FORBIDDEN, "Course not found.");
+  const answerSheetCount = await AnswerSheet.countDocuments({ testId: { $in: course.tests }, user: userId, isFinished: true });
+  if (answerSheetCount === course.tests?.length) {
+    // update Course finished
+    const courseIndex = userRoadmap.roadmap_milestone.findIndex((milestone) => milestone.course.toString() === courseId.toString());
+    if (courseIndex !== -1) {
+      userRoadmap.roadmap_milestone[courseIndex].is_finished = true;
+      userRoadmap.roadmap_milestone[courseIndex].finished_date = Date.now();
+      userRoadmap.roadmap_milestone[courseIndex].progress = 100;
+      await userRoadmap.save();
+    }
+  }
+
+  // check completed roadmap
+  const allFinished = userRoadmap.roadmap_milestone.every(milestone => milestone.is_finished);
+  if (allFinished) {
+    userRoadmap.is_finished = true;
+    userRoadmap.finished_date = Date.now();
+    await userRoadmap.save();
+  }
+
+  //return key
+  const testKey = await testService.getTestKey(answerSheet.testId);
+  answerSheet.mark =
+    (answerSheet.choices.filter((c) => testKey.includes(c.choiceId.toString())).length /
+      testKey.length) *
+    10;
+  await answerSheet.save();
+  return {
+    answerSheet,
+    testKey,
+  };
 }
 
 module.exports = {
@@ -1242,4 +1332,5 @@ module.exports = {
 	unlockRoadmapCourse,
   requestMentor,
   addMentorRating,
+  submitAnswerSheet,
 };
