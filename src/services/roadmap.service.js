@@ -331,9 +331,6 @@ const getCourseDetail = async (jobEducationId, courseId) => {
 
   if (!jobEducation) throw new ApiError(httpStatus.NOT_FOUND, 'Request not found');
 
-  const hasCourse = jobEducation.courses.find((item) => item.toString() === courseId.toString());
-  if (!hasCourse) throw new ApiError(httpStatus.NOT_FOUND, 'Course not found');
-
   const course = await Course.findById(courseId).populate('modules skill_tags.skill');
   return {
 		...jobEducation.toObject(),
@@ -529,7 +526,7 @@ const signAsComplete = async (userId, instructorCourseId) => {
   const instructorCourse = await InstructorCourse.findOne({ _id: instructorCourseId, instructor: instructor.id || instructor._id })
 
   instructorCourse.is_done = true;
-  instructorCourse.status = 2;
+  instructorCourse.status = 1;
   await instructorCourse.save();
 
   return instructorCourse;
@@ -543,7 +540,7 @@ const goToFix = async (userId, instructorCourseId) => {
   const instructorCourse = await InstructorCourse.findOne({ _id: instructorCourseId, instructor: instructor.id || instructor._id })
 
   instructorCourse.is_done = false;
-  instructorCourse.status = 1;
+  instructorCourse.status = 0;
   await instructorCourse.save();
 
   return instructorCourse;
@@ -594,9 +591,7 @@ const updateInstructorCourseStatus = async (instructorCourseId, body) => {
 
   if (!instructorCourse) throw new ApiError(httpStatus.NOT_FOUND, 'Course not found');
 
-  if (instructorCourse.status !== 2) {
-    instructorCourse.status = body.status;
-  }
+  instructorCourse.status = body.status;
 
   await instructorCourse.save()
 

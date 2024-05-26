@@ -2,7 +2,8 @@ const httpStatus = require('http-status');
 const pick = require('../utils/pick');
 const ApiError = require('../utils/ApiError');
 const catchAsync = require('../utils/catchAsync');
-const { userService, companyService } = require('../services');
+const { userService, companyService, roadmapService } = require('../services');
+const { UserRoadMap, Course } = require('../models');
 
 const createUser = catchAsync(async (req, res) => {
   const user = await userService.createUser(req.body);
@@ -60,7 +61,7 @@ const findJob = catchAsync(async (req, res) => {
 });
 
 const suggestJobs = catchAsync(async (req, res) => {
-  const data = await userService.suggestJobs(req.user._id);
+  const data = await userService.suggestJobs(req.user._id, req.body);
   res.status(httpStatus.OK).send(data);
 });
 
@@ -134,6 +135,84 @@ const addMentorRating = catchAsync(async (req, res) => {
   }
 });
 
+const getTestById = catchAsync(async (req, res) => {
+  try {
+    const userRoadmap = await UserRoadMap.findOne({ user: req.user._id, is_finished: false });
+
+    if (!userRoadmap) {
+      throw new ApiError(httpStatus.NOT_FOUND, 'Roadmap not found');
+    }
+
+    const roadmapCourse = userRoadmap.roadmap_milestone?.find((item) => item.course.toString() === req.params.courseId.toString());
+
+    if (!roadmapCourse || !roadmapCourse.is_unlocked) {
+      throw new ApiError(httpStatus.NOT_FOUND, 'Course not found');
+    }
+
+    const course = await Course.findById(req.params.courseId);
+    if (!course) {
+      throw new ApiError(httpStatus.NOT_FOUND, 'Course not found');
+    }
+    let data = {};
+    const test = await roadmapService.getTestById(req.params.testId);
+    const answerSheet = await userService.getUserAnswerSheet(req.user._id, test.id);
+    data.test = test;
+    data.userRoadmap = userRoadmap;
+    data.course = course;
+    data.answerSheet = answerSheet;
+    if (answerSheet.isFinished) {
+      data.testKey = await userService.getTestKey(answerSheet.testId);
+    }
+    res.status(httpStatus.OK).send(data);
+  } catch (e) {
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, e);
+  }
+});
+
+const getUserAnswerSheet = catchAsync(async (req, res) => {
+  try {
+    const data = await userService.getUserAnswerSheet(req.user._id, req.params.courseId, req.params.testId);
+    res.status(httpStatus.OK).send(data);
+  } catch (e) {
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, e);
+  }
+});
+
+const createAnswerSheet = catchAsync(async (req, res) => {
+  try {
+    const data = await userService.createAnswerSheet(req.user._id, req.params.testId, req.body);
+    res.status(httpStatus.OK).send(data);
+  } catch (e) {
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, e);
+  }
+});
+
+const updateAnswerSheetById = catchAsync(async (req, res) => {
+  try {
+    const data = await userService.updateAnswerSheetById(req.params.answerSheetId, req.body);
+    res.status(httpStatus.OK).send(data);
+  } catch (e) {
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, e);
+  }
+});
+
+const getAnswerSheetById = catchAsync(async (req, res) => {
+  try {
+    const data = await userService.getAnswerSheetById(req.params.answerSheetId);
+    res.status(httpStatus.OK).send(data);
+  } catch (e) {
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, e);
+  }
+});
+
+const submitAnswerSheet = catchAsync(async (req, res) => {
+  try {
+    const data = await userService.submitAnswerSheet(req.user._id, req.params.courseId, req.params.answerSheetId, req.body);
+    res.status(httpStatus.OK).send(data);
+  } catch (e) {
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, e);
+  }
+});
 
 module.exports = {
   createUser,
@@ -157,4 +236,10 @@ module.exports = {
 	unlockRoadmapCourse,
   requestMentor,
   addMentorRating,
+  getUserAnswerSheet,
+  createAnswerSheet,
+  updateAnswerSheetById,
+  getAnswerSheetById,
+  submitAnswerSheet,
+  getTestById,
 };

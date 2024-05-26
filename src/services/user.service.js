@@ -549,7 +549,7 @@ const suggestLogic = (jobRequirements, userSubjects, certificateIds, majorIds, c
 	}
 }
 
-const suggestJobs = async (userId) => {
+const suggestJobs = async (userId, params) => {
   const userProfile = await UserProfile.findOne({user: userId});
   let userSubjects = userProfile.skills;
   const certificateIds = userProfile.certificates.map((item) => item.certificate);
@@ -589,7 +589,22 @@ const suggestJobs = async (userId) => {
                                         }
                                       })
   userSubjects = removeDuplicates(userSubjects.concat(userCertificateSubjects, userMajorSubjects));
-  let availableJobs = await Job.find({ status: 1 });
+  const query = {
+    status: 1,
+  }
+  if (params.salary_min) {
+    query.salary_min = { $gte: params.salary_min }
+  }
+  if (params.salary_max) {
+    query.salary_max = { $gte: params.salary_max }
+  }
+  if (params.province_id) {
+    query.salary_max = params.province_id
+  }
+  if (params.title?.trim()) {
+    query.title = { "$regex": params.title.trim(), "$options": "i" }
+  }
+  let availableJobs = await Job.find(query);
   const jobIds = availableJobs.map((item) => item._id);
   const requirements = await JobRequirement.find({ job: { $in: jobIds } }).populate('skills certificates majors colleges');
   const educations = await JobEducation.find({job: { $in: jobIds }});
@@ -920,11 +935,20 @@ const startJobEducation = async (userId, candidateApplyId) => {
 }
 
 const getCurrentEducation = async (userId) => {
-  const userRoadmap = await UserRoadMap.findOne({ user: userId, is_finished: false }).populate('current_course current_module roadmap_milestone.course').populate({
+  const userRoadmap = await UserRoadMap.findOne({ user: userId, is_finished: false })
+  .populate('current_course current_module roadmap_milestone.course')
+  .populate({
     path: 'roadmap_milestone.course',
     populate: {
       path: 'modules',
       model: 'Module',
+    },
+  })
+  .populate({
+    path: 'roadmap_milestone.course',
+    populate: {
+      path: 'tests',
+      model: 'Test',
     },
   });
   if (!userRoadmap) {
@@ -970,17 +994,40 @@ const getCurrentEducation = async (userId) => {
 
   const courses = userRoadmap.roadmap_milestone.map((item) => item.course);
   const testIds = courses.map((item) => item.tests).flat();
-  const tests = await Test.find({ _in: { $in: testIds } });
   const answersheets = await AnswerSheet.find({ testId: { $in: testIds }, user: userId })
 
+  const roadmapData = userRoadmap.roadmap_milestone.toObject().map((item) => {
+    const testResults = [];
+    item.course.tests?.forEach((test) => {
+      const answerSheet = answersheets.find((sheet) => sheet.testId.toString() === test._id.toString());
+      if (answerSheet) {
+        testResults.push({
+          answerSheet,
+          test,
+          isFinished: true,
+        })
+      } else {
+        testResults.push({
+          test,
+          isFinished: false,
+        })
+      }
+    })
+    return {
+      ...item,
+      tests: testResults,
+    }
+  })
+
   return {
-    userRoadmap: userRoadmap.toObject(),
+    userRoadmap: {
+      ...userRoadmap.toObject(),
+      roadmap_milestone: roadmapData,
+    },
     job: job.toObject(),
     jobEducation: jobEducation.toObject(),
     roadmapProgress,
     mentorShifts,
-    tests,
-    answersheets,
   }
 }
 
@@ -1031,7 +1078,7 @@ const getUserRoadmapProgress = (userRoadmap) => {
   let totalModules = 0;
   userRoadmap.roadmap_milestone.forEach((milestone) => {
     totalModules += milestone.course.modules.length;
-    totalDoneModule += milestone.done_modules.length;
+    totalDoneModule += milestone.is_finished ? milestone.course.modules.length : milestone.done_modules.length;
   })
 
   return totalDoneModule / totalModules * 100;
@@ -1263,8 +1310,75 @@ const addMentorRating = async (userId, body) => {
   return rating;
 }
 
-const submitAnswerSheet = async (userId, userRoadmapId, courseId, answerSheetId, body) => {
-  const userRoadmap = await UserRoadMap.findOne({ user: userId, is_finished: false, _id: userRoadmapId });
+const createAnswerSheet = async (userId, testId, body) => {
+  const test = await Test.findById(testId);
+  if (!test) throw new ApiError(httpStatus.FORBIDDEN, "Test not found.");
+
+  const createBody = {
+    user: userId,
+    testId,
+    ...body,
+  }
+
+  return AnswerSheet.create(createBody);
+}
+
+const getUserAnswerSheet = async (userId, testId) => {
+  return AnswerSheet.findOne({ user: userId, testId });
+}
+
+// const getResultTableById = async (testId, userId) => {
+//   const test = await Test.findById(testId).populate('questions');
+//   if (!test) {
+//     throw new ApiError(httpStatus.NOT_FOUND, 'Test not found');
+//   }
+//   const key = test.getKey();
+//   const sheetFilter = { testId: testId }
+//   if (userId) sheetFilter.user = userId;
+//   const { results: sheets } = await answerSheetService.queryAnswerSheets(sheetFilter, { populate: "user", limit: 1000 });
+//   const results = sheets.map(sheet => {
+//     sheet = sheet.toJSON();
+//     const result = pick(sheet, ['createdAt', 'updatedAt', 'finishedAt', 'id', 'blurCount']);
+//     // result.id = result._id;
+//     result.user = pick(sheet.user, ['displayName', 'photoURL', 'email', 'id']);
+//     result.trueCount = sheet.choices.filter(c => key.includes(c.choiceId.toString())).length;
+//     result.mark = result.trueCount / test.questions.length * 10;
+//     return result;
+//   })
+//   return results;
+// }
+
+const updateAnswerSheetById = async (answerSheetId, updateBody) => {
+  const answerSheet = await getAnswerSheetById(answerSheetId);
+  if (!answerSheet) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'AnswerSheet not found');
+  }
+  Object.assign(answerSheet, updateBody);
+  await answerSheet.save();
+  return answerSheet;
+};
+
+const getAnswerSheetById = async (id, options = null) => {
+  let answerSheetPromise = AnswerSheet.findOne({ _id: id });
+
+  if (options?.populate) {
+    options.populate.split(',').forEach((populateOption) => {
+      answerSheetPromise = answerSheetPromise.populate(
+        populateOption
+          .split('.')
+          .reverse()
+          .reduce((a, b) => ({ path: b, populate: a }))
+      );
+    });
+  }
+
+  answerSheetPromise = answerSheetPromise.exec();
+
+  return answerSheetPromise;
+};
+
+const submitAnswerSheet = async (userId, courseId, answerSheetId, body) => {
+  const userRoadmap = await UserRoadMap.findOne({ user: userId, is_finished: false });
   if (!userRoadmap) throw new ApiError(httpStatus.FORBIDDEN, "Roadmap not found.");
   if (body.isFinished) body.finishedAt = new Date();
   const answerSheet = await AnswerSheet.findById(answerSheetId);
@@ -1298,16 +1412,22 @@ const submitAnswerSheet = async (userId, userRoadmapId, courseId, answerSheetId,
   }
 
   //return key
-  const testKey = await testService.getTestKey(answerSheet.testId);
-  answerSheet.mark =
-    (answerSheet.choices.filter((c) => testKey.includes(c.choiceId.toString())).length /
-      testKey.length) *
-    10;
+  const testKey = await getTestKey(answerSheet.testId);
+  answerSheet.mark = answerSheet.choices.filter((c) => testKey.includes(c.choiceId.toString())).length
   await answerSheet.save();
   return {
     answerSheet,
     testKey,
   };
+}
+
+const getTestKey = async (testId) => {
+  const test = await Test.findById(testId).populate('questions');
+  if (!test) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'Test not found');
+  }
+  const key = test.getKey();
+  return key;
 }
 
 module.exports = {
@@ -1333,4 +1453,9 @@ module.exports = {
   requestMentor,
   addMentorRating,
   submitAnswerSheet,
+  getUserAnswerSheet,
+  createAnswerSheet,
+  updateAnswerSheetById,
+  getAnswerSheetById,
+  getTestKey,
 };

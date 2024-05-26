@@ -205,11 +205,22 @@ const getJobs = async (company_id, params) => {
 
 const getJobById = async (id) => {
 	let job = await Job.findById(id);
-  const education = await JobEducation.findOne({job: job.id}).populate('courses').populate({
+  const education = await JobEducation.findOne({job: job.id}).populate('courses')
+  .populate({
     path: 'courses',
     populate: {
       path: 'modules',
       model: 'Module',
+    },
+  })
+  .populate({
+    path: 'courses',
+    populate: {
+      path: 'tests',
+      populate: {
+        path: 'questions',
+        model: 'Question'
+      },
     },
   });
   job = {

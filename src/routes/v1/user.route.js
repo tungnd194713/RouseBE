@@ -36,6 +36,12 @@ router.post('/educations/rating-mentor', auth(), userController.addMentorRating)
 router.get('/educations/courses/:courseId/modules/:moduleId', auth(), userController.getUserModule);
 router.get('/educations/courses/:courseId/modules/:moduleId/watched', auth(), userController.watchedModule);
 router.post('/jobs/list/applied', auth(), userController.getAppliedJobs);
+router.get('/educations/courses/:courseId/tests/:testId/sheets', auth(), userController.getUserAnswerSheet);
+router.get('/educations/courses/:courseId/tests/:testId/', auth(), userController.getTestById);
+router.post('/educations/tests/:testId/sheets/create', auth(), userController.createAnswerSheet);
+router.put('/educations/sheets/:answerSheetId', auth(), userController.updateAnswerSheetById);
+router.get('/educations/sheets/:answerSheetId', auth(), userController.getAnswerSheetById);
+router.put('/educations/courses/:courseId/sheets/:answerSheetId/submit', auth(), userController.submitAnswerSheet);
 
 module.exports = router;
 
