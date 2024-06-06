@@ -1,8 +1,26 @@
 /* eslint-disable camelcase */
 const httpStatus = require('http-status');
 const ApiError = require('../utils/ApiError');
-const { Discussion, DiscussionReply, Note, ModuleTest, ModuleTestSubmission, ModuleProgress, Module } = require('../models');
+const { Discussion, DiscussionReply, Note, ModuleTest, ModuleTestSubmission, ModuleProgress, Module, ModuleProgressLog } = require('../models');
 const RoadMap = require('../models/roadmap.model');
+
+const updateModuleLog = async (userId, body) => {
+  if (!body.logId) {
+    throw new Error('The logId field is required in the document body.');
+  }
+  const data = {
+    ...body,
+    user: userId,
+  }
+  const moduleLog = await ModuleProgressLog.findOne({ logId: data.logId });
+  if (!moduleLog) {
+    return ModuleProgressLog.create(data);
+  } else {
+    moduleLog.video_update_time = data.video_update_time;
+    await moduleLog.save()
+    return moduleLog;
+  }
+}
 
 const getNotes = async (module_id, user_id) => {
   const noteList = await Note.find({ module_id, user_id });
@@ -180,4 +198,5 @@ module.exports = {
   getExam,
   submitExam,
   seedData,
+  updateModuleLog,
 };

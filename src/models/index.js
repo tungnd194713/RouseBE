@@ -41,3 +41,4 @@ module.exports.InstructorCourse = require('./instructorCourse.model');
 module.exports.Test = require('./test.model');
 module.exports.Question = require('./question.model');
 module.exports.AnswerSheet = require('./answerSheet.model');
+module.exports.ModuleProgressLog = require('./moduleProgressLog.model');

@@ -50,6 +50,9 @@ const userSchema = mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    profile_image: {
+      type: String,
+    },
     point_owned: {
       type: Number,
       default: 0,

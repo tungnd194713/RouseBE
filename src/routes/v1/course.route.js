@@ -8,6 +8,7 @@ const moduleController = require('../../controllers/module.controller');
 
 const router = express.Router();
 
+router.post('/module-log', auth(), moduleController.updateModuleLog);
 router.get('/module/:module_id', auth(), courseController.getCourse);
 router.get('/applied-courses', auth(), courseController.getUserCourse);
 router.post('/module/seed', moduleController.seedData);

@@ -5,8 +5,19 @@ const auth = require('../../middlewares/auth');
 const validate = require('../../middlewares/validate');
 const userValidation = require('../../validations/user.validation');
 const userController = require('../../controllers/user.controller');
+const myCustomStorage = require("../../helpers/storage.helper");
 
 const router = express.Router();
+
+let FileStorage = myCustomStorage({
+  destination: function (req, file, cb) {
+    cb(null);
+  },
+});
+
+let uploadFile = multer({
+  storage: FileStorage,
+});
 
 router
   .route('/')
@@ -21,6 +32,7 @@ router
 router.get('/profile/', auth(), userController.getUserProfile);
 router.get('/profile/user-options', auth(), userController.getUserOptions);
 router.get('/me', auth(), userController.getUser);
+router.post('/update-image', uploadFile.single('file'), auth(), userController.uploadAvatar);
 router.post('/profile/update-info-basic', upload.none(), auth(), userController.updateUser);
 router.post('/profile/update-info-advanced', upload.none(), auth(), userController.updateUserProfile);
 router.get('/jobs/:jobId/matching-point', auth(), userController.getJobMatchingPoint);

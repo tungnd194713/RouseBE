@@ -5,3 +5,4 @@ module.exports.surveyController = require('./survey.controller');
 module.exports.companyController = require('./company.controller');
 module.exports.subjectController = require('./subject.controller');
 module.exports.mentorController = require('./mentor.controller');
+module.exports.instructorController = require('./instructor.controller');

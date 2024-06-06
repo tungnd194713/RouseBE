@@ -8,6 +8,7 @@ const courseRoute = require('./course.route');
 const companyRoute = require('./company.route');
 const subjectRoute = require('./subject.route');
 const mentorRoute = require('./mentor.route');
+// const instructorRoute = require('./instructor.route');
 const config = require('../../config/config');
 
 const router = express.Router();
@@ -41,6 +42,10 @@ const defaultRoutes = [
     path: '/mentors',
     route: mentorRoute,
   },
+  // {
+  //   path: '/instructors',
+  //   route: instructorRoute,
+  // },
 	{
     path: '/technical',
     route: subjectRoute,

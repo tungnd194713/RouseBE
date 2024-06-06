@@ -30,6 +30,18 @@ const updateUser = catchAsync(async (req, res) => {
   res.status(httpStatus.OK).send(user);
 });
 
+const uploadAvatar = catchAsync(async (req, res) => {
+  const file = req.file;
+  try {
+    const user = await userService.getUserById(req.user._id);
+    user.profile_image = file?.details.Location;
+    await user.save();
+    res.status(httpStatus.OK).send(file?.details.Location);
+  } catch (e) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'User not found');
+  }
+});
+
 const deleteUser = catchAsync(async (req, res) => {
   await userService.deleteUserById(req.params.userId);
   res.status(httpStatus.NO_CONTENT).send();
@@ -242,4 +254,5 @@ module.exports = {
   getAnswerSheetById,
   submitAnswerSheet,
   getTestById,
+  uploadAvatar,
 };

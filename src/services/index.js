@@ -9,3 +9,4 @@ module.exports.surveyService = require('./survey.service');
 module.exports.companyService = require('./company.service');
 module.exports.subjectService = require('./subject.service');
 module.exports.mentorService = require('./mentor.service');
+module.exports.instructorService = require('./instructor.service');

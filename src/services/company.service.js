@@ -81,6 +81,10 @@ const getCompanyById = async (id) => {
 	return Company.findById(id);
 }
 
+const updateCompanyById = async (id, body) => {
+  return Company.findByIdAndUpdate(id, body);
+}
+
 const createJob = async (company_id, data) => {
 	const slug = data.title;
 
@@ -169,6 +173,106 @@ const createJob = async (company_id, data) => {
   }
 }
 
+const updateJobById = async (jobId, body) => {
+  const job = await Job.findById(jobId);
+
+  if (!job) throw new ApiError(httpStatus.NOT_FOUND, 'Job not found');
+  Object.assign(job, body);
+  await job.save();
+
+  let jobEducation = await JobEducation.findOne({ job: jobId });
+  if (jobEducation) {
+    if (!body.accept_education) {
+      await jobEducation.remove();
+    } else {
+      jobEducation.max_education_month = body.max_education_month;
+      // jobEducation.scholarship = body.scholarship (Can not change if paid)
+      // jobEducation.number_trainings = body.number_trainings (Can not change if paid)
+      await jobEducation.save()
+    }
+  } else {
+    if (body.accept_education && body.accept_education !== 'false') {
+      jobEducation = await JobEducation.create({
+				company: job.company_id,
+				job: job.id,
+				max_education_month: body.max_education_month,
+				scholarship: body.scholarship,
+        number_trainings: body.number_trainings,
+			})
+    }
+  }
+
+  try {
+    await JobRequirement.deleteMany({ job: job.id || job._id, company: job.company_id });
+    const beginnerSkills = JSON.parse(body.beginnerSkills);
+    const intermediateSkills = JSON.parse(body.intermediateSkills);
+    const advancedSkills = JSON.parse(body.advancedSkills);
+    const certificates = JSON.parse(body.certificates);
+    const collegeMajors = JSON.parse(body.collegeMajors);
+
+    const beginnerData = beginnerSkills.map(subArray => {
+      const ids = subArray.map(obj => obj.id);
+      return {
+        job: job.id,
+        company: job.company_id,
+        skills: ids,
+        level: 'Beginner',
+        type: 'Skill',
+      }
+    });
+    const intermediateData = intermediateSkills.map(subArray => {
+      const ids = subArray.map(obj => obj.id);
+      return {
+        job: job.id,
+        company: job.company_id,
+        skills: ids,
+        level: 'Intermediate',
+        type: 'Skill',
+      }
+    });
+    const advancedData = advancedSkills.map(subArray => {
+      const ids = subArray.map(obj => obj.id);
+      return {
+        job: job.id,
+        company: job.company_id,
+        skills: ids,
+        level: 'Advanced',
+        type: 'Skill',
+      }
+    });
+    const certificateData = certificates.map(subArray => {
+      const ids = subArray.map(obj => obj.id);
+      return {
+        job: job.id,
+        company: job.company_id,
+        certificates: ids,
+        type: 'Certificate',
+      }
+    });
+    const collegeMajorData = collegeMajors.map(subArray => {
+      const majors = subArray.majors.map(obj => obj.id);
+      const colleges = subArray.colleges.map(obj => obj.id);
+      return {
+        job: job.id,
+        company: job.company_id,
+        majors,
+        colleges,
+        type: 'Major',
+      }
+    });
+
+    const requirementData = beginnerData.concat(intermediateData, advancedData, certificateData, collegeMajorData);
+    const requirements = await JobRequirement.insertMany(requirementData);
+    return {
+      job,
+      requirements,
+      jobEducation,
+    }
+  } catch (e) {
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'Something wrong');
+  }
+}
+
 const getJobs = async (company_id, params) => {
 	const filter = {
     title: { "$regex": params.title, "$options": "i" },
@@ -228,7 +332,7 @@ const getJobById = async (id) => {
     max_education_month: education ? education.max_education_month : null,
     scholarship: education ? education.scholarship : null,
     id: job._id,
-    education: education.toObject(),
+    education: education ? education.toObject() : null,
     education_status: education ? education.status : null,
     date_end: job.date_start ? addMonthsToDate(job.date_start, job.display_month) : null,
     registeredCourses: education && (education.status === 2 || education.status === 4) ? education.courses : [],
@@ -324,6 +428,8 @@ const acceptEducation = async (candidateApplyId) => {
   }
   candidateApply.status = 3
   await candidateApply.save();
+
+  //Create user roadmap
   return 'Update success'
 }
 
@@ -1163,7 +1269,9 @@ module.exports = {
 	getCompanyByEmail,
 	getCompanyJobs,
 	getCompanyById,
+  updateCompanyById,
 	createJob,
+  updateJobById,
 	getJobs,
 	getJobById,
   getCandidateApplies,

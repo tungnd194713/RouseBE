@@ -1,10 +1,26 @@
 const httpStatus = require('http-status');
 const { companyService } = require('../services');
 const catchAsync = require('../utils/catchAsync');
+const ApiError = require('../utils/ApiError');
 
 const me = catchAsync(async (req, res) => {
   const company = await companyService.getCompanyById(req.user._id);
   res.status(httpStatus.OK).send(company);
+});
+
+const updateCompanyInfo = catchAsync(async (req, res) => {
+  const file = req.file;
+  try {
+    const body = {
+      ...req.body,
+      logo: file.details.Location,
+    }
+    const data = await companyService.updateCompanyById(req.user._id, body);
+    res.status(httpStatus.OK).send(data);
+  } catch (e) {
+    console.log(e)
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'Something wrong');
+  }
 });
 
 const getCompanyJobs = catchAsync(async (req, res) => {
@@ -15,6 +31,21 @@ const getCompanyJobs = catchAsync(async (req, res) => {
 const createJob = catchAsync(async (req, res) => {
   const job = await companyService.createJob(req.user._id, req.body);
   res.status(httpStatus.OK).send(job);
+});
+
+const updateJobById = catchAsync(async (req, res) => {
+  const file = req.file;
+  try {
+    const body = {
+      ...req.body
+    }
+    if (file) body.image_job = file.details.Location;
+    const data = await companyService.updateJobById(req.params.jobId, body);
+    res.status(httpStatus.OK).send(data);
+  } catch (e) {
+    console.log(e)
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'Something wrong');
+  }
 });
 
 const getJobs = catchAsync(async (req, res) => {
@@ -99,7 +130,9 @@ const sendChangeRequest = catchAsync(async (req, res) => {
 module.exports = {
 	getCompanyJobs,
 	me,
+  updateCompanyInfo,
 	createJob,
+  updateJobById,
 	getJobs,
 	getJobById,
 	getJobCandidateApplies,
@@ -114,5 +147,5 @@ module.exports = {
   getCVMatchingPoint,
   toggleJobEducation,
 	openJobEducation,
-  sendChangeRequest
+  sendChangeRequest,
 }

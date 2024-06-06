@@ -4,14 +4,27 @@ const upload = multer()
 const auth = require('../../middlewares/auth');
 const companyController = require('../../controllers/company.controller');
 const authController = require('../../controllers/auth.controller');
+const myCustomStorage = require("../../helpers/storage.helper");
 // const { validate } = require('../../models/course.model');
 
 const router = express.Router();
 
+let FileStorage = myCustomStorage({
+  destination: function (req, file, cb) {
+    cb(null);
+  },
+});
+
+let uploadFile = multer({
+  storage: FileStorage,
+});
+
 router.post('/login', authController.companyLogin);
 router.get('/get', companyController.getCompanyJobs);
 router.get('/me', auth(), companyController.me);
-router.post('/jobs/create', upload.none(), auth(), companyController.createJob);
+router.post('/profiles/update-detail', uploadFile.single('logo'), auth(), companyController.updateCompanyInfo);
+router.post('/jobs/create', uploadFile.single('image_job'), auth(), companyController.createJob);
+router.post('/jobs/update/:jobId', uploadFile.single('image_job'), auth(), companyController.updateJobById);
 router.get('/jobs/', auth(), companyController.getJobs);
 router.get('/jobs/:id', auth(), companyController.getJobById);
 router.get('/jobs/:id/education-open', auth(), companyController.openJobEducation);

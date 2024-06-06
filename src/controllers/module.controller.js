@@ -3,6 +3,11 @@ const { moduleService } = require('../services');
 const catchAsync = require('../utils/catchAsync');
 const ApiError = require('../utils/ApiError');
 
+const updateModuleLog = catchAsync(async (req, res) => {
+  const data = await moduleService.updateModuleLog(req.user._id, req.body);
+  res.status(httpStatus.OK).send(data);
+});
+
 const getNotes = catchAsync(async (req, res) => {
   const note = await moduleService.getNotes(req.params.module_id, req.user.id);
   res.status(httpStatus.OK).send(note);
@@ -73,4 +78,5 @@ module.exports = {
   getExam,
   submitExam,
   seedData,
+  updateModuleLog,
 };
