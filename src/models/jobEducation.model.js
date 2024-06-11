@@ -53,12 +53,21 @@ const jobEducationSchema = mongoose.Schema(
           default: false
         },
       }
-    ]
+    ],
+		published_at: {
+			type: Date,
+		}
   },
   {
     timestamps: true,
   }
 );
+
+jobEducationSchema.virtual('userRoadmaps', {
+  ref: 'UserRoadmap',
+  localField: '_id',
+  foreignField: 'jobEducation',
+});
 
 // add plugin that converts mongoose to json
 jobEducationSchema.plugin(toJSON);

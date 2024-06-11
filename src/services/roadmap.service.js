@@ -164,6 +164,39 @@ const completeMilestone = async (milestone_id, user_id) => {
   }
 };
 
+const getPublishedEducations = async (options, params) => {
+	const filter = {
+		status: 3,
+	}
+  const queryOptions = {
+		...options,
+    populate: 'job,company,course,userRoadmaps'
+	}
+  const result = await JobEducation.paginate(filter, queryOptions);
+  if (!result) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'Education not found');
+  }
+
+	const jobEducations = result.results.map((item) => {
+		const totalPoint = item.courses.reduce((acc, course) => acc + course.point_cost, 0);
+		return {
+			id: item.id || item._id,
+			job_title: item.job.title,
+			company_name: item.company.company_name,
+			max_education_month: item.max_education_month,
+			course_count: item.courses.length,
+			user_count: item.userRoadmaps.length,
+			point_cost: totalPoint,
+			published_at: item.published_at,
+		}
+	});
+
+	return {
+		...result,
+		results: jobEducations,
+	}
+}
+
 const getEducationRequests = async (options, params) => {
   const certificateObjects = await CertificateSubjects.find({}).populate('subject_objects.subject');
   const majorObjects = await CollegeSubjects.find({}).populate('subject_objects.subject');
@@ -262,7 +295,9 @@ const sendEducationRoadmap = async (jobEducationId) => {
     jobEducation.status = 2;
   } else if (jobEducation.status === 2) {
     jobEducation.status = 1;
-  }
+  } else if (jobEducation.status === 4) {
+    jobEducation.status = 2;
+	}
   await jobEducation.save();
   return "Request sent";
 }
@@ -699,6 +734,7 @@ module.exports = {
   getMilestoneModuleProgress,
   completeMilestone,
   applyRoadmap,
+	getPublishedEducations,
   getEducationRequests,
   getEducationCourses,
   getCourseDetail,

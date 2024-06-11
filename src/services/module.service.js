@@ -1,8 +1,9 @@
 /* eslint-disable camelcase */
 const httpStatus = require('http-status');
 const ApiError = require('../utils/ApiError');
-const { Discussion, DiscussionReply, Note, ModuleTest, ModuleTestSubmission, ModuleProgress, Module, ModuleProgressLog } = require('../models');
+const { Discussion, DiscussionReply, Note, ModuleTest, ModuleTestSubmission, ModuleProgress, Module, ModuleProgressLog, Course } = require('../models');
 const RoadMap = require('../models/roadmap.model');
+const { parseDateRange } = require('../helpers/roadmap.helper');
 
 const updateModuleLog = async (userId, body) => {
   if (!body.logId) {
@@ -20,6 +21,46 @@ const updateModuleLog = async (userId, body) => {
     await moduleLog.save()
     return moduleLog;
   }
+}
+
+const getModuleLog = async (userId, params) => {
+  if (!body.logId) {
+    throw new Error('The logId field is required in the document body.');
+  }
+  const filter = {
+		user: userId,
+	}
+	if (params.courseId) {
+		const course = await Course.findById(params.courseId);
+		filter.module = { $in: course.modules };
+	} else if (params.courseIds && params.courseIds.length) {
+		const courses = await Course.find({ _id: { $in: params.courseIds } });
+		const moduleIds = courses.map((item) => item.courses).flat();
+		filter.module = { $in: moduleIds };
+
+		const moduleLogs = await ModuleProgressLog.find({ filter });
+		const groupedLogs = {};
+		courses.forEach(course => {
+			groupedLogs[course._id || course.id] = [];
+		});
+		moduleLogs.forEach(log => {
+			const course = courses.find(course => course.courses.includes(log.module));
+			if (course) {
+				groupedLogs[course._id || course.id].push(log);
+			}
+		});
+		const courseLogsArray = courses.map(course => ({
+			course,
+			groupedLogs: groupedLogs[course._id || course.id]
+		}));
+		return courseLogsArray;
+	}
+  if (params.date) {
+		const { startDate, endDate } = parseDateRange(params.date);
+    filter.createdAt = { $gte: startDate, $lte: endDate };
+  }
+  const moduleLogs = await ModuleProgressLog.find({ filter });
+	return moduleLogs;
 }
 
 const getNotes = async (module_id, user_id) => {

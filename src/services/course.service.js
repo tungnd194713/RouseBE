@@ -107,7 +107,7 @@ const updateModuleProgress = async (moduleId, updateBody) => {
 const getCourses = async (filter, options) => {
 	const queryOption = {
 		...options,
-		populate: 'skill_tags.skill',
+		populate: 'skill_tags.skill,in_charge',
 	}
   const filterOption = {}
   if (filter.level) {

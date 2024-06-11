@@ -40,6 +40,10 @@ const courseSchema = mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Test"
     }],
+		in_charge: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+		},
   },
   {
     timestamps: true,
