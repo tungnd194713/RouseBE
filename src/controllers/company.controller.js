@@ -102,6 +102,15 @@ const acceptInterview = catchAsync(async (req, res) => {
   res.status(httpStatus.OK).send(data);
 });
 
+const candidateUpdate = catchAsync(async (req, res) => {
+  try {
+    const data = await companyService.candidateUpdate(req.params.candidateId, req.body);
+    res.status(httpStatus.OK).send(data);
+  } catch (e) {
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'Something wrong');
+  }
+});
+
 const getCandidateEducationProgress = catchAsync(async (req, res) => {
   const data = await companyService.getCandidateEducationProgress(req.params.candidateId, req.user._id);
   res.status(httpStatus.OK).send(data);
@@ -148,4 +157,5 @@ module.exports = {
   toggleJobEducation,
 	openJobEducation,
   sendChangeRequest,
+  candidateUpdate,
 }

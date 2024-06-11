@@ -421,6 +421,17 @@ const getUserCv = async (candidateApplyId) => {
 	}
 }
 
+const candidateUpdate = async (candidateApplyId, body) => {
+  const candidateApply = await CandidateApply.findById(candidateApplyId).populate('job');
+  if (!candidateApply) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'CV not found');
+  }
+
+  Object.assign(candidateApply, body);
+  await candidateApply.save();
+  return 'Candidate updated';
+}
+
 const acceptEducation = async (candidateApplyId) => {
   const candidateApply = await CandidateApply.findById(candidateApplyId);
   if (!candidateApply) {
@@ -1286,5 +1297,6 @@ module.exports = {
   getCVMatchingPoint,
   toggleJobEducation,
 	openJobEducation,
-  sendChangeRequest
+  sendChangeRequest,
+  candidateUpdate,
 }
