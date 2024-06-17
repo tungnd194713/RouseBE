@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 const httpStatus = require('http-status');
-const { User, UserProfile, Job, JobEducation, CertificateSubjects, CollegeSubjects, JobRequirement, Subject, Certificate, Major, CandidateApply, Course, UserRoadMap, Module, Discussion, Note, Mentor, MentorShift, MentorRating, Test, AnswerSheet } = require('../models');
+const { User, UserProfile, Job, JobEducation, CertificateSubjects, CollegeSubjects, JobRequirement, Subject, Certificate, Major, CandidateApply, Course, UserRoadMap, Module, Discussion, Note, Mentor, MentorShift, MentorRating, Test, AnswerSheet, ModuleProgressLog } = require('../models');
 const ApiError = require('../utils/ApiError');
 
 const convertHourToNumber = (hourString) => {
@@ -684,7 +684,24 @@ const getDetailJob = async (userId, jobId) => {
                                         })
 	userSubjects = removeDuplicates(userSubjects.concat(userCertificateSubjects, userMajorSubjects));
 	const job = await Job.findById(jobId);
-  const education = await JobEducation.findOne({job: jobId });
+  const education = await JobEducation.findOne({job: jobId })
+  .populate({
+    path: 'courses',
+    populate: {
+      path: 'modules',
+      model: 'Module',
+    },
+  })
+  .populate({
+    path: 'courses',
+    populate: {
+      path: 'tests',
+      populate: {
+        path: 'questions',
+        model: 'Question'
+      },
+    },
+  });
 	const jobRequirements = await JobRequirement.find({ job: jobId }).populate('skills certificates majors colleges');
 
 	const suggestResult = suggestLogic(jobRequirements, userSubjects, certificateIds, majorIds, certificateObjects, majorObjects);
@@ -697,12 +714,33 @@ const getDetailJob = async (userId, jobId) => {
         ...matchingItem
     };
 	});
-	const matchedCourses = await Course.find({
-		'skill_tags.skill': { $in: needToLearn.map(item => item.skill) }
-	}).populate('modules');
+
+  let userRoadmaps = await UserRoadMap.find({ user: userId });
+  const doneCourses = userRoadmaps.map((roadmap) => roadmap.done_courses.map((course) => course.toString())).flat();
+
+	const roadmapCourses = education.courses.map((course) => {
+    const timeCost = course.modules.reduce((acc, module) => acc + module.estimated_time, 0);
+    const item = matchedLearning.find((tag) => tag.skill.toString() === course.skill_tags[0].skill.toString() && tag.level === course.skill_tags[0].level);
+    const courseLearned = false;
+    if (doneCourses.includes(course.id.toString()) || doneCourses.includes(course._id.toString())) {
+      courseLearned = true;
+    }
+
+    return {
+      ...course.toObject(),
+      id: course._id || course.id,
+      _id: course._id || course.id,
+      timeCost,
+      tag: {
+        name: item,
+      },
+      courseLearned,
+    }
+  });
+
 	const needToLearnCourses = [];
 	matchedLearning.forEach((item) => {
-		const foundCourse = matchedCourses.find((course) => {
+		const foundCourse = roadmapCourses.find((course) => {
 			const foundTag = course.skill_tags.find((tag) => tag.skill.toString() === item.skill.toString() && tag.level === item.level);
 			if (foundTag) {
 				return true;
@@ -714,6 +752,8 @@ const getDetailJob = async (userId, jobId) => {
 			const timeCost = foundCourse.modules.reduce((acc, module) => acc + module.estimated_time, 0);
 			needToLearnCourses.push({
 				...foundCourse.toObject(),
+        _id: foundCourse.id || foundCourse._id,
+        id: foundCourse.id || foundCourse._id,
 				timeCost,
 				tag: item,
 			})
@@ -854,6 +894,7 @@ const getDetailJob = async (userId, jobId) => {
     majorColleges,
     previewSkills,
 		needToLearnCourses,
+    roadmapCourses,
     isApplied: isApplied ? true : false,
 	}
 }
@@ -1388,6 +1429,16 @@ const submitAnswerSheet = async (userId, courseId, answerSheetId, body) => {
   Object.assign(answerSheet, body);
   await answerSheet.save();
 
+  const courseIndex = userRoadmap.roadmap_milestone.findIndex((milestone) => milestone.course.toString() === courseId.toString());
+  if (courseIndex !== -1) {
+    if (userRoadmap.roadmap_milestone[courseIndex].done_tests) {
+      userRoadmap.roadmap_milestone[courseIndex].done_tests.push(answerSheet.testId);
+    } else {
+      userRoadmap.roadmap_milestone[courseIndex].done_tests = [answerSheet.testId];
+    }
+    await userRoadmap.save();
+  }
+
   // check completed course
   const course = await Course.findById(courseId);
   if (!course) throw new ApiError(httpStatus.FORBIDDEN, "Course not found.");
@@ -1430,6 +1481,153 @@ const getTestKey = async (testId) => {
   return key;
 }
 
+const getUserRoadmapList = async (userId) => {
+  const userRoadmaps = await UserRoadMap.find({ user: userId }).populate('jobEducation job').populate('roadmap_milestone.course');
+
+  // Extract modules from the populated data
+  const allModules = [];
+  userRoadmaps.forEach(roadmap => {
+    roadmap.roadmap_milestone.forEach(milestone => {
+      if (milestone.course && milestone.course.modules) {
+        allModules.push(...milestone.course.modules);
+      }
+    });
+  });
+  const moduleProgressLogs = await ModuleProgressLog.find({ user: userId, module: { $in: allModules } }).populate('module', '_id name').populate('course', '_id title');
+  const result = userRoadmaps.map((roadmap) => {
+    const courseModules = [];
+    let progress = 0;
+    roadmap.roadmap_milestone.forEach(milestone => {
+      if (milestone.course && milestone.course.modules) {
+        const stringModules = milestone.course.modules.map((item) => item.toString());
+        courseModules.push(...stringModules);
+      }
+      if (milestone.is_finished) {
+        progress += 1 / roadmap.roadmap_milestone.length;
+      } else {
+        progress += (milestone.done_modules?.length || 0 + milestone.done_tests?.length || 0) / (milestone.course?.modules?.length || 0 + milestone.course?.test?.length || 1);
+      }
+    });
+    const latestModuleLog = moduleProgressLogs.filter((log) => courseModules.includes(log.module.id.toString()))
+                                               .reduce((latestLog, currentLog) => {
+                                                  return new Date(currentLog.createdAt) > new Date(latestLog.createdAt) ? currentLog : latestLog;
+                                                }, {createdAt: "1990-06-15T08:59:05.000Z"});
+    return {
+      ...roadmap.toObject(),
+      currentLearning: {
+        module: {
+          id: latestModuleLog.module?.id,
+          name: latestModuleLog.module?.name
+        },
+        course: {
+          id: latestModuleLog.course?.id,
+          name: latestModuleLog.course?.title
+        },
+      },
+      overallProgress: Math.round(progress * 100),
+    }
+  })
+
+  return result;
+}
+
+const getRoadmapDetail = async (userId, roadmapId) => {
+  const userRoadmap = await UserRoadMap.findOne({ user: userId, _id: roadmapId })
+  .populate('current_course current_module roadmap_milestone.course')
+  .populate({
+    path: 'roadmap_milestone.course',
+    populate: {
+      path: 'modules',
+      model: 'Module',
+    },
+  })
+  .populate({
+    path: 'roadmap_milestone.course',
+    populate: {
+      path: 'tests',
+      model: 'Test',
+    },
+  });
+  if (!userRoadmap) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'Roadmap not found');
+  }
+  const courseIds = userRoadmap.roadmap_milestone.map((item) => new mongoose.Types.ObjectId(item.course._id));
+  const mentorShifts = await MentorShift.aggregate([
+    {
+      $match: {
+        user: userId,
+        course: { $in: courseIds }
+      }
+    },
+    {
+      $lookup: {
+        from: 'mentors', // name of the Mentor collection
+        localField: 'mentor',
+        foreignField: '_id',
+        as: 'mentor'
+      }
+    },
+    {
+      $unwind: '$mentor'
+    },
+    {
+      $lookup: {
+        from: 'mentorratings', // name of the MentorRating collection
+        localField: 'mentor._id',
+        foreignField: 'mentor',
+        as: 'mentor.ratings'
+      }
+    }
+  ]);
+  const job = await Job.findById(userRoadmap.job).select('id title');
+  if (!job) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'Job not found');
+  }
+  const jobEducation = await JobEducation.findOne({job: job.id});
+  if (!jobEducation) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'Job education not found');
+  }
+  const roadmapProgress = getUserRoadmapProgress(userRoadmap);
+
+  const courses = userRoadmap.roadmap_milestone.map((item) => item.course);
+  const testIds = courses.map((item) => item.tests).flat();
+  const answersheets = await AnswerSheet.find({ testId: { $in: testIds }, user: userId })
+
+  const roadmapData = userRoadmap.roadmap_milestone.toObject().map((item) => {
+    const testResults = [];
+    item.course.tests?.forEach((test) => {
+      const answerSheet = answersheets.find((sheet) => sheet.testId.toString() === test._id.toString());
+      if (answerSheet) {
+        testResults.push({
+          answerSheet,
+          test,
+          isFinished: true,
+        })
+      } else {
+        testResults.push({
+          test,
+          isFinished: false,
+        })
+      }
+    })
+    return {
+      ...item,
+      tests: testResults,
+    }
+  })
+
+  return {
+    userRoadmap: {
+      ...userRoadmap.toObject(),
+      roadmap_milestone: roadmapData,
+    },
+    job: job.toObject(),
+    jobEducation: jobEducation.toObject(),
+    roadmapProgress,
+    mentorShifts,
+  }
+}
+
 module.exports = {
   createUser,
   queryUsers,
@@ -1458,4 +1656,6 @@ module.exports = {
   updateAnswerSheetById,
   getAnswerSheetById,
   getTestKey,
+  getUserRoadmapList,
+  getRoadmapDetail,
 };

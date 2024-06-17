@@ -19,6 +19,11 @@ const userRoadmapSchema = mongoose.Schema(
       ref: 'Job',
       required: true,
     },
+    jobEducation: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'JobEducation',
+      required: true,
+    },
     description: {
       // HOw to become a frontend dev
       type: String,
@@ -62,6 +67,12 @@ const userRoadmapSchema = mongoose.Schema(
         done_modules: [{
           type: mongoose.Schema.Types.ObjectId,
           ref: 'Module',
+          default: [],
+        }],
+        done_tests: [{
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'Test',
+          default: [],
         }],
         finished_date: Date,
 				is_unlocked: {
@@ -70,6 +81,11 @@ const userRoadmapSchema = mongoose.Schema(
 				},
       },
     ],
+    done_courses: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Course',
+      default: [],
+    }],
     progress: {
       type: Number,
       default: 0,

@@ -226,6 +226,24 @@ const submitAnswerSheet = catchAsync(async (req, res) => {
   }
 });
 
+const getUserRoadmapList = catchAsync(async (req, res) => {
+  try {
+    const data = await userService.getUserRoadmapList(req.user._id);
+    res.status(httpStatus.OK).send(data);
+  } catch (e) {
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, e);
+  }
+});
+
+const getRoadmapDetail = catchAsync(async (req, res) => {
+  try {
+    const data = await userService.getRoadmapDetail(req.user._id, req.params.roadmapId);
+    res.status(httpStatus.OK).send(data);
+  } catch (e) {
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, e);
+  }
+});
+
 module.exports = {
   createUser,
   getUsers,
@@ -255,4 +273,6 @@ module.exports = {
   submitAnswerSheet,
   getTestById,
   uploadAvatar,
+  getUserRoadmapList,
+  getRoadmapDetail,
 };
