@@ -551,9 +551,9 @@ const suggestLogic = (jobRequirements, userSubjects, certificateIds, majorIds, c
 
 const suggestJobs = async (userId, params) => {
   const userProfile = await UserProfile.findOne({user: userId});
-  let userSubjects = userProfile.skills;
-  const certificateIds = userProfile.certificates.map((item) => item.certificate);
-  const majorIds = userProfile.educations.map((item) => item.major);
+  let userSubjects = userProfile?.skills || [];
+  const certificateIds = userProfile?.certificates?.map((item) => item.certificate) || [];
+  const majorIds = userProfile?.educations?.map((item) => item.major) || [];
   const certificateObjects = await CertificateSubjects.find({});
   const majorObjects = await CollegeSubjects.find({});
   let userCertificateSubjects = certificateObjects.filter((item) => certificateIds.includes(item.certificate))
@@ -624,8 +624,8 @@ const suggestJobs = async (userId, params) => {
 			id: job._id,
 			requirements: jobRequirements,
       need_to_learn: removeDuplicates(suggestResult.needToLearnSkill.flat()),
-      job_point: suggestResult.jobPoint,
-      user_job_point: suggestResult.userJobPoint,
+      job_point: userProfile ? suggestResult.jobPoint : null,
+      user_job_point: userProfile ? suggestResult.userJobPoint : null,
 			matching_point: suggestResult.userJobPoint / suggestResult.jobPoint,
       previewSkills,
     }
@@ -645,8 +645,8 @@ const suggestJobs = async (userId, params) => {
 
 const getDetailJob = async (userId, jobId) => {
   const userProfile = await UserProfile.findOne({user: userId});
-  let userSubjects = userProfile.skills;
-	const certificateIds = userProfile.certificates.map((item) => item.certificate);
+  let userSubjects = userProfile?.skills || [];
+	const certificateIds = userProfile?.certificates?.map((item) => item.certificate) || [];
 	const certificateObjects = await CertificateSubjects.find({});
   let userCertificateSubjects = certificateObjects.filter((item) => certificateIds.includes(item.certificate))
                                                   .map((item) => item.subject_objects.map((iitem) => {
@@ -665,7 +665,7 @@ const getDetailJob = async (userId, jobId) => {
                                                     }
                                                   })
   const majorObjects = await CollegeSubjects.find({});
-  const majorIds = userProfile.educations.map((item) => item.major);
+  const majorIds = userProfile?.educations?.map((item) => item.major) || [];
 	const userMajorSubjects = majorObjects.filter((item) => majorIds.includes(item.major))
                                         .map((item) => item.subject_objects.map((iitem) => {
                                           return {
@@ -751,7 +751,7 @@ const getDetailJob = async (userId, jobId) => {
 		if (foundCourse) {
 			const timeCost = foundCourse.modules.reduce((acc, module) => acc + module.estimated_time, 0);
 			needToLearnCourses.push({
-				...foundCourse.toObject(),
+				...foundCourse,
         _id: foundCourse.id || foundCourse._id,
         id: foundCourse.id || foundCourse._id,
 				timeCost,
@@ -884,8 +884,8 @@ const getDetailJob = async (userId, jobId) => {
 		scholarship: education ? education.scholarship : null,
 		id: job._id,
 		need_to_learn: matchedLearning,
-		job_point: suggestResult.jobPoint,
-		user_job_point: suggestResult.userJobPoint,
+		job_point: userProfile ? suggestResult.jobPoint : null,
+		user_job_point: userProfile ? suggestResult.userJobPoint : null,
 		job_matching_data: jobMatchingDataFinal,
     beginnerSkills,
     intermediateSkills,
@@ -893,7 +893,7 @@ const getDetailJob = async (userId, jobId) => {
     certificates,
     majorColleges,
     previewSkills,
-		needToLearnCourses,
+		needToLearnCourses: roadmapCourses?.filter((item) => !item.courseLearned) || [],
     roadmapCourses,
     isApplied: isApplied ? true : false,
 	}
