@@ -99,7 +99,14 @@ const convertRequirements = (requirements, certificateObjects, majorObjects) => 
   return skills;
 }
 
+const parseDateRange = (dateStr) => {
+  const startDate = moment(dateStr, 'DD-MM-YYYY').startOf('day').toDate();
+  const endDate = moment(dateStr, 'DD-MM-YYYY').endOf('day').toDate();
+  return { startDate, endDate };
+};
+
 module.exports = {
   convertRequirements,
   skillLevelCompare,
+	parseDateRange,
 }

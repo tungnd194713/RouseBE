@@ -82,6 +82,15 @@ const seedRoadmap = catchAsync(async (req, res) => {
   }
 });
 
+const getPublishedEducations = catchAsync(async (req, res) => {
+  try {
+    const result = await roadmapService.getPublishedEducations(req.query, req.body);
+    res.status(httpStatus.OK).send(result);
+  } catch (e) {
+    throw new ApiError(httpStatus.NOT_FOUND, e);
+  }
+});
+
 const getEducationRequests = catchAsync(async (req, res) => {
   try {
     const result = await roadmapService.getEducationRequests(req.query, req.body);
@@ -365,6 +374,7 @@ module.exports = {
   seedCategory,
   seedMilestones,
   seedRoadmap,
+	getPublishedEducations,
   getEducationRequests,
   getEducationCourses,
   getCourseDetail,

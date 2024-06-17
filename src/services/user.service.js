@@ -1442,14 +1442,21 @@ const submitAnswerSheet = async (userId, courseId, answerSheetId, body) => {
   // check completed course
   const course = await Course.findById(courseId);
   if (!course) throw new ApiError(httpStatus.FORBIDDEN, "Course not found.");
-  const answerSheetCount = await AnswerSheet.countDocuments({ testId: { $in: course.tests }, user: userId, isFinished: true });
-  if (answerSheetCount === course.tests?.length) {
+	const testAnswerSheets = await AnswerSheet.find({ testId: { $in: course.tests }, user: userId, isFinished: true });
+	const existingTestIds = testAnswerSheets.map(sheet => sheet.testId.toString());
+
+  if (course.tests.map((id) => id.toString()).every(testId => existingTestIds.includes(testId))) {
     // update Course finished
     const courseIndex = userRoadmap.roadmap_milestone.findIndex((milestone) => milestone.course.toString() === courseId.toString());
     if (courseIndex !== -1) {
       userRoadmap.roadmap_milestone[courseIndex].is_finished = true;
       userRoadmap.roadmap_milestone[courseIndex].finished_date = Date.now();
       userRoadmap.roadmap_milestone[courseIndex].progress = 100;
+			if (!userRoadmap.done_courses) {
+				userRoadmap.done_courses = [courseId];
+			} else {
+				userRoadmap.done_course.push(courseId);
+			}
       await userRoadmap.save();
     }
   }

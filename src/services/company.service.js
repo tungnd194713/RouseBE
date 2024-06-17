@@ -2,6 +2,7 @@ const { Company, Job, CandidateApply, Subject, College, Certificate, Course, Maj
 const JobRequirement = require('../models/jobRequirement.model');
 const ApiError = require('../utils/ApiError');
 const httpStatus = require('http-status');
+const mongoose = require('mongoose');
 
 function formatDate(dateString) {
 	const date = new Date(dateString);
@@ -433,16 +434,40 @@ const candidateUpdate = async (candidateApplyId, body) => {
 }
 
 const acceptEducation = async (candidateApplyId) => {
-  const candidateApply = await CandidateApply.findById(candidateApplyId);
-  if (!candidateApply) {
-    throw new ApiError(httpStatus.NOT_FOUND, 'CV not found');
-  }
-  candidateApply.status = 3
-  await candidateApply.save();
+  const session = await mongoose.startSession();
+  session.startTransaction();
 
-  //Create user roadmap
-  return 'Update success'
-}
+  try {
+    const candidateApply = await CandidateApply.findById(candidateApplyId).populate('job').session(session);
+    if (!candidateApply) {
+      throw new ApiError(httpStatus.NOT_FOUND, 'CV not found');
+    }
+
+    candidateApply.status = 3;
+    await candidateApply.save({ session });
+
+    // Create user roadmap
+    const jobEducation = await JobEducation.findOne({ job: candidateApply.job }).session(session);
+    await UserRoadMap.create([{
+      title: 'Lộ trình học cho vị trí ' + candidateApply.job.title,
+      user: candidateApply.user,
+      jobEducation: jobEducation.id || jobEducation._id,
+      job: candidateApply.job.id || candidateApply.job._id,
+      scholarship: jobEducation.scholarship,
+      progress: 0,
+      applied_date: Date.now(),
+      roadmap_milestone: jobEducation.courses.map((course) => ({ course: course.id || course._id })),
+    }], { session });
+
+    await session.commitTransaction();
+    session.endSession();
+    return 'Update success';
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    throw error;
+  }
+};
 
 const acceptInterview = async (candidateApplyId) => {
   const candidateApply = await CandidateApply.findById(candidateApplyId);

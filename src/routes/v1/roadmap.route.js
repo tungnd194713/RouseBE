@@ -18,6 +18,7 @@ router.post('/milestone/:milestone_id/complete', auth(), roadmapController.compl
 router.post('/seed-category', roadmapController.seedCategory);
 router.post('/seed-milestone', roadmapController.seedMilestones);
 router.post('/seed-roadmap', roadmapController.seedRoadmap);
+router.post('/educations', auth(), roadmapController.getPublishedEducations);
 router.post('/education-requests', auth(), roadmapController.getEducationRequests);
 router.get('/education-requests/:jobEducationId', auth(), roadmapController.getEducationCourses);
 router.get('/education-requests/:jobEducationId/check', auth(), roadmapController.checkEducationRoadmap);
