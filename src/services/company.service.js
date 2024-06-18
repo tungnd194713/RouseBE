@@ -1,4 +1,4 @@
-const { Company, Job, CandidateApply, Subject, College, Certificate, Course, Major, CertificateSubjects, CollegeSubjects, JobEducation, UserProfile, User, UserRoadMap } = require('../models');
+const { Company, Job, CandidateApply, Subject, College, Certificate, Course, Major, CertificateSubjects, CollegeSubjects, JobEducation, UserProfile, User, UserRoadMap, ModuleProgressLog, AnswerSheet, Test } = require('../models');
 const JobRequirement = require('../models/jobRequirement.model');
 const ApiError = require('../utils/ApiError');
 const httpStatus = require('http-status');
@@ -336,7 +336,7 @@ const getJobById = async (id) => {
     education: education ? education.toObject() : null,
     education_status: education ? education.status : null,
     date_end: job.date_start ? addMonthsToDate(job.date_start, job.display_month) : null,
-    registeredCourses: education && (education.status === 2 || education.status === 4) ? education.courses : [],
+    registeredCourses: education && (education.status !== 1) ? education.courses : [],
   }
   const requirements = await JobRequirement.find({job: job.id}).populate('skills certificates majors colleges');
   const beginnerSkills = requirements.filter(item => item.type === 'Skill' && item.level === 'Beginner').map(obj => obj.skills);
@@ -1304,6 +1304,267 @@ const getRequirementOptions = async () => {
 	}
 }
 
+const getEducationList = async (companyId, filter, options) => {
+	const queryOption = {
+		...options,
+		populate: 'job,userRoadmaps',
+	}
+  const filterOption = {
+    ...filter,
+    company: companyId,
+  }
+	const educations = await JobEducation.paginate(filterOption, queryOption);
+
+  const jobIds = educations.results.map((item) => item.job.id);
+  const requirements = await JobRequirement.find({ job: { $in: jobIds } }).populate('skills certificates majors colleges');
+  const returnedEducations = educations.results.map((education) => {
+    const requirement = requirements.filter((item) => item.job.toString() === education.job.id.toString());
+    const convertedRequirements = {};
+    convertedRequirements.majorColleges = requirement.filter((item) => item.type === 'Major');
+    convertedRequirements.certificates = requirement.filter((item) => item.type === 'Certificate');
+    convertedRequirements.beginnerSkills = requirement.filter((item) => item.type === 'Skill' && item.level === 'Beginner').map(obj => obj.skills)
+    convertedRequirements.intermediateSkills = requirement.filter((item) => item.type === 'Skill' && item.level === 'Intermediate').map(obj => obj.skills);
+    convertedRequirements.advancedSkills = requirement.filter((item) => item.type === 'Skill' && item.level === 'Advanced').map(obj => obj.skills);
+    return {
+      ...education.toObject(),
+      requirements: convertedRequirements,
+      userRoadmaps: education.userRoadmaps,
+    }
+  })
+	return {
+    ...educations,
+    results: returnedEducations,
+  };
+}
+
+const getEducationDetail = async (userId, educationId) => {
+  const education = await JobEducation.findOne({company: userId, _id: educationId}).populate('courses')
+  .populate({
+    path: 'courses',
+    populate: {
+      path: 'modules',
+      model: 'Module',
+    },
+  })
+  .populate({
+    path: 'courses',
+    populate: {
+      path: 'tests',
+      populate: {
+        path: 'questions',
+        model: 'Question'
+      },
+    },
+  })
+  .populate('userRoadmaps');
+  if (!education) throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'Something wrong');
+  let job = await Job.findById(education.job);
+  job = {
+    ...job.toObject(),
+    max_education_month: education ? education.max_education_month : null,
+    scholarship: education ? education.scholarship : null,
+    id: job._id,
+    education: education ? education.toObject() : null,
+    education_status: education ? education.status : null,
+    date_end: job.date_start ? addMonthsToDate(job.date_start, job.display_month) : null,
+    registeredCourses: education && (education.status !== 1) ? education.courses : [],
+    userRoadmaps: education ? education.userRoadmaps : [],
+  }
+  const requirements = await JobRequirement.find({job: job.id}).populate('skills certificates majors colleges');
+  const beginnerSkills = requirements.filter(item => item.type === 'Skill' && item.level === 'Beginner').map(obj => obj.skills);
+  const intermediateSkills = requirements.filter(item => item.type === 'Skill' && item.level === 'Intermediate').map(obj => obj.skills);
+  const advancedSkills = requirements.filter(item => item.type === 'Skill' && item.level === 'Advanced').map(obj => obj.skills);
+  const certificates = requirements.filter(item => item.type === 'Certificate').map(obj => obj.certificates);
+  const majorColleges = requirements.filter(item => item.type === 'Major').map(obj => {
+    return {
+      majors: obj.majors,
+      colleges: obj.colleges
+    }
+  });
+  const previewSkills = requirements.filter(item => item.type === 'Skill').map(obj => obj.skills);
+
+	return {
+		job,
+    beginnerSkills,
+    intermediateSkills,
+    advancedSkills,
+    certificates,
+    majorColleges,
+    previewSkills,
+	}
+}
+
+const getEducationParticipant = async (companyId, educationId) => {
+  const education = await JobEducation.findOne({ company: companyId, _id: educationId });
+  if (!education) throw new ApiError(httpStatus.NOT_FOUND, 'Education not found');
+
+  const userRoadmaps = await UserRoadMap.find({ job: education.job }).populate('roadmap_milestone.course user');
+
+  const allUsers = userRoadmaps.map((item) => item.user.id || item.user._id);
+
+  const candidateApplies = await CandidateApply.find({ job: education.job, user: { $in: allUsers } });
+
+  // Extract modules from the populated data
+  const allModules = [];
+  userRoadmaps.forEach(roadmap => {
+    roadmap.roadmap_milestone.forEach(milestone => {
+      if (milestone.course && milestone.course.modules) {
+        allModules.push(...milestone.course.modules);
+      }
+    });
+  });
+  const moduleProgressLogs = await ModuleProgressLog.find({ user: { $in: allUsers }, module: { $in: allModules } });
+  const userRoadmapData = userRoadmaps.map((roadmap) => {
+    const candidateApply = candidateApplies.find((item) => item.user.toString() === roadmap.user._id.toString() || item.user.toString() === roadmap.user.id.toString());
+    const courseModules = [];
+    const watchedModules = [];
+    const doneCourses = roadmap.roadmap_milestone.filter((item) => item.is_finished);
+    roadmap.roadmap_milestone.forEach(milestone => {
+      if (milestone.course && milestone.course.modules) {
+        const stringModules = milestone.course.modules.map((item) => item.toString());
+        const stringDoneModules = milestone.done_modules.map((item) => item.toString());
+        courseModules.push(...stringModules);
+        watchedModules.push(...stringDoneModules);
+      }
+    });
+    const watchedTime = moduleProgressLogs.filter((item) => courseModules.includes(item.module.toString()))
+                                                     .reduce((total, log) => total + log.video_update_time - log.video_start_time, 0);
+    return {
+      watchedTime: Math.round(watchedTime),
+      watchedModules: `${watchedModules.length}/${courseModules.length} module`,
+      doneCourses: `${doneCourses.length}/${roadmap.roadmap_milestone.length} khóa`,
+      userName: roadmap.user.name,
+      isFinished: roadmap.is_finished,
+      startDate: roadmap.applied_date,
+      finishedDate: roadmap.is_finished ? roadmap.finished_date : null,
+      userId: roadmap.user.id || roadmap.user._id,
+      id: roadmap.id || roadmap._id,
+      candidateApplyId: candidateApply.id || candidateApply._id,
+    }
+  })
+
+  return userRoadmapData;
+}
+
+const getProgressStatistic = async (candidateApplyId, companyId) => {
+  const candidateApply = await CandidateApply.findOne({ _id: candidateApplyId, company: companyId });
+
+  if (!candidateApply || !candidateApply.education_applied) throw new ApiError(httpStatus.NOT_FOUND, 'CV not found');
+
+  const user = await User.findById(candidateApply.user);
+
+  if (!user) throw new ApiError(httpStatus.NOT_FOUND, 'User not found');
+
+  const userRoadmap = await UserRoadMap.findOne({ user: candidateApply.user, job: candidateApply.job }).populate('roadmap_milestone.course')
+  .populate({
+    path: 'roadmap_milestone.course',
+    populate: {
+      path: 'modules',
+      model: 'Module',
+    },
+  })
+  .populate({
+    path: 'roadmap_milestone.course',
+    populate: {
+      path: 'tests',
+      model: 'Test',
+    },
+  });
+  if (!userRoadmap) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'Roadmap not found');
+  }
+
+  const courseArr = userRoadmap.roadmap_milestone.map((item) => item.course.id || item.course._id);
+
+  // Step 2: Fetch module progress logs
+  let moduleProgressLogs = await ModuleProgressLog.find({ user: user.id, course: { $in: courseArr } });
+
+  // Step 3: Fetch test results
+  const answerSheets = await AnswerSheet.find({ user: user.id });
+
+  // Step 4: Transform data into the desired format
+  const courseProgressData = userRoadmap.roadmap_milestone.map(milestone => {
+    const course = milestone.course;
+
+    // Get modules watch time
+    const modules = course.modules.map(mod => {
+      const logs = moduleProgressLogs.filter(log => log.module.toString() === mod._id?.toString() || log.module.toString() === mod.id?.toString());
+      const totalWatchTime = logs.reduce((sum, log) => sum + log.video_update_time - log.video_start_time, 0);
+
+      return {
+        id: mod._id?.toString(),
+        name: mod.name,
+        watch_time: Math.round(totalWatchTime),
+      };
+    });
+
+    const totalWatchTime = modules.reduce((sum, mod) => sum + mod.watch_time, 0);
+
+    // Get test results
+    const testResults = milestone.done_tests.map(testId => {
+      const answerSheet = answerSheets.find(sheet => sheet.testId.toString() === testId.toString() && sheet.isFinished);
+      return answerSheet ? answerSheet.mark : 0;
+    });
+
+    const tests = course?.tests?.map((test) => {
+      const answerSheet = answerSheets.find(sheet => (sheet.testId.toString() === test.id?.toString() || sheet.testId.toString() === test._id?.toString()) && sheet.isFinished);
+      return {
+        id: test.id || test._id,
+        name: test.name,
+        is_finished: answerSheet ? true : false,
+        finished_at: answerSheet.finishedAt ? answerSheet.finishedAt.toISOString().split('T')[0] : null,
+        max_mark: test.questions.length,
+        mark: answerSheet.mark || 0,
+      };
+    })
+
+    const averageTestResult = testResults.length > 0
+      ? testResults.reduce((sum, mark) => sum + mark, 0) / testResults.length
+      : 0;
+
+    return {
+      id: course._id.toString(),
+      courseName: course.name,
+      started_at: milestone.started_at ? milestone.started_at.toISOString().split('T')[0] : null,
+      finished_at: milestone.finished_date ? milestone.finished_date.toISOString().split('T')[0] : null,
+      total_watch_time: totalWatchTime,
+      average_test_result: Math.round(averageTestResult),
+      modules: modules,
+      tests: tests,
+    };
+  });
+
+  moduleProgressLogs = moduleProgressLogs.reduce((accumulator, log) => {
+    const key = `${log.course}-${log.module}`;
+    if (!accumulator[key]) {
+      accumulator[key] = {
+        module: log.module,
+        course: log.course,
+        total_video_update_time: log.video_update_time - log.video_start_time,
+        logId: log.logId,
+        user: log.user,
+        created_at: log.created_at,
+      };
+    } else {
+      accumulator[key].total_video_update_time += log.video_update_time;
+    }
+    return accumulator;
+  }, {});
+
+  moduleProgressLogs = Object.values(moduleProgressLogs);
+
+  return {courseProgressData, moduleProgressLogs};
+}
+
+const createNewEducationRequest = async (companyId, body) => {
+  const data = {
+    ...body,
+    company: companyId,
+  }
+
+  return JobEducation.create(body);
+}
+
 module.exports = {
 	getCompanyByEmail,
 	getCompanyJobs,
@@ -1327,4 +1588,9 @@ module.exports = {
 	openJobEducation,
   sendChangeRequest,
   candidateUpdate,
+  getEducationList,
+  createNewEducationRequest,
+  getEducationDetail,
+  getEducationParticipant,
+  getProgressStatistic,
 }

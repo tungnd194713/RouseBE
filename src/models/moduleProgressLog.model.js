@@ -17,6 +17,11 @@ const moduleProgressLogSchema = mongoose.Schema(
       ref: 'Module',
       required: true,
     },
+    course: {
+      type: mongoose.SchemaTypes.ObjectId,
+      ref: 'Course',
+      required: true,
+    },
     video_start_time: Number,
     video_update_time: Number,
   },

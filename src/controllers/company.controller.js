@@ -136,6 +136,51 @@ const sendChangeRequest = catchAsync(async (req, res) => {
   res.status(httpStatus.OK).send(data);
 });
 
+const getEducationList = catchAsync(async (req, res) => {
+  try {
+    const data = await companyService.getEducationList(req.user._id, req.body, req.query);
+    res.status(httpStatus.OK).send(data);
+  } catch (e) {
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, e);
+  }
+});
+
+const createNewEducationRequest = catchAsync(async (req, res) => {
+  try {
+    const data = await companyService.createNewEducationRequest(req.user._id, req.body);
+    res.status(httpStatus.OK).send(data);
+  } catch (e) {
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, e);
+  }
+});
+
+const getEducationDetail = catchAsync(async (req, res) => {
+  try {
+    const data = await companyService.getEducationDetail(req.user._id, req.params.id);
+    res.status(httpStatus.OK).send(data);
+  } catch (e) {
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, e);
+  }
+});
+
+const getEducationParticipant = catchAsync(async (req, res) => {
+  try {
+    const data = await companyService.getEducationParticipant(req.user._id, req.params.id);
+    res.status(httpStatus.OK).send(data);
+  } catch (e) {
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, e);
+  }
+});
+
+const getProgressStatistic = catchAsync(async (req, res) => {
+  try {
+    const data = await companyService.getProgressStatistic(req.params.candidateId, req.user._id);
+    res.status(httpStatus.OK).send(data);
+  } catch (e) {
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, e);
+  }
+});
+
 module.exports = {
 	getCompanyJobs,
 	me,
@@ -158,4 +203,9 @@ module.exports = {
 	openJobEducation,
   sendChangeRequest,
   candidateUpdate,
+  getEducationList,
+  createNewEducationRequest,
+  getEducationDetail,
+  getEducationParticipant,
+  getProgressStatistic,
 }
