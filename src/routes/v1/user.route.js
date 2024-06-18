@@ -27,7 +27,8 @@ router
 router
   .route('/:userId')
   // .get(auth('getUsers'), validate(userValidation.getUser), userController.getUser)
-  .delete(auth('manageUsers'), validate(userValidation.deleteUser), userController.deleteUser);
+  .delete(auth('manageUsers'), validate(userValidation.deleteUser), userController.deleteUser)
+	.put(auth(), validate(), userController.editUser);
 
 router.get('/profile/', auth(), userController.getUserProfile);
 router.get('/profile/user-options', auth(), userController.getUserOptions);
@@ -42,18 +43,18 @@ router.get('/jobs/:jobId', auth(), userController.getDetailJob);
 router.post('/candidate-applies/', upload.none(), auth(), userController.applyJob);
 router.post('/candidate-applies/:candidateApplyId/start-education', auth(), userController.startJobEducation);
 router.get('/educations/current', auth(), userController.getCurrentEducation);
-router.post('/educations/courses/:courseId/unlock', auth(), userController.unlockRoadmapCourse);
+router.post('/educations/:roadmapId/courses/:courseId/unlock', auth(), userController.unlockRoadmapCourse);
 router.post('/educations/courses/:courseId/request-mentors', auth(), userController.requestMentor);
 router.post('/educations/rating-mentor', auth(), userController.addMentorRating);
-router.get('/educations/courses/:courseId/modules/:moduleId', auth(), userController.getUserModule);
-router.get('/educations/courses/:courseId/modules/:moduleId/watched', auth(), userController.watchedModule);
+router.get('/educations/:roadmapId/courses/:courseId/modules/:moduleId', auth(), userController.getUserModule);
+router.get('/educations/:roadmapId/courses/:courseId/modules/:moduleId/watched', auth(), userController.watchedModule);
 router.post('/jobs/list/applied', auth(), userController.getAppliedJobs);
 router.get('/educations/courses/:courseId/tests/:testId/sheets', auth(), userController.getUserAnswerSheet);
 router.get('/educations/courses/:courseId/tests/:testId/', auth(), userController.getTestById);
 router.post('/educations/tests/:testId/sheets/create', auth(), userController.createAnswerSheet);
 router.put('/educations/sheets/:answerSheetId', auth(), userController.updateAnswerSheetById);
 router.get('/educations/sheets/:answerSheetId', auth(), userController.getAnswerSheetById);
-router.put('/educations/courses/:courseId/sheets/:answerSheetId/submit', auth(), userController.submitAnswerSheet);
+router.put('/educations/:roadmapId/courses/:courseId/sheets/:answerSheetId/submit', auth(), userController.submitAnswerSheet);
 
 module.exports = router;
 

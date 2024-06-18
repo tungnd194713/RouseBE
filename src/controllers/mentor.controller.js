@@ -57,6 +57,11 @@ const getRatingList = catchAsync(async (req, res) => {
   res.status(httpStatus.OK).send(data);
 });
 
+const getMentors = catchAsync(async (req, res) => {
+  const data = await mentorService.getMentors(req.body, req.params);
+  res.status(httpStatus.OK).send(data);
+});
+
 module.exports = {
 	seedMentor,
 	getProfile,
@@ -69,4 +74,5 @@ module.exports = {
 	updateShift,
 	deleteShift,
 	getRatingList,
+	getMentors,
 }

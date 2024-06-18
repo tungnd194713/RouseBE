@@ -25,6 +25,11 @@ const getUser = catchAsync(async (req, res) => {
   res.send(user);
 });
 
+const editUser = catchAsync(async (req, res) => {
+  const user = await userService.updateUserById(req.params.userId, req.body);
+  res.status(httpStatus.OK).send(user);
+});
+
 const updateUser = catchAsync(async (req, res) => {
   const user = await userService.updateUserById(req.user._id, req.body);
   res.status(httpStatus.OK).send(user);
@@ -104,7 +109,7 @@ const getCurrentEducation = catchAsync(async (req, res) => {
 
 const getUserModule = catchAsync(async (req, res) => {
   try {
-    const data = await userService.getUserModule(req.user._id, req.params.courseId, req.params.moduleId);
+    const data = await userService.getUserModule(req.user._id, req.params.roadmapId, req.params.courseId, req.params.moduleId);
     res.status(httpStatus.OK).send(data);
   } catch (e) {
     throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, e);
@@ -113,7 +118,7 @@ const getUserModule = catchAsync(async (req, res) => {
 
 const watchedModule = catchAsync(async (req, res) => {
   try {
-    const data = await userService.watchedModule(req.user._id, req.params.courseId, req.params.moduleId);
+    const data = await userService.watchedModule(req.user._id, req.user.params.roadmapId, req.params.courseId, req.params.moduleId);
     res.status(httpStatus.OK).send(data);
   } catch (e) {
     throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, e);
@@ -122,7 +127,7 @@ const watchedModule = catchAsync(async (req, res) => {
 
 const unlockRoadmapCourse = catchAsync(async (req, res) => {
   try {
-    const data = await userService.unlockRoadmapCourse(req.user._id, req.params.courseId, req.body);
+    const data = await userService.unlockRoadmapCourse(req.user._id, req.params.roadmapId, req.params.courseId, req.body);
     res.status(httpStatus.OK).send(data);
   } catch (e) {
     throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, e);
@@ -219,7 +224,7 @@ const getAnswerSheetById = catchAsync(async (req, res) => {
 
 const submitAnswerSheet = catchAsync(async (req, res) => {
   try {
-    const data = await userService.submitAnswerSheet(req.user._id, req.params.courseId, req.params.answerSheetId, req.body);
+    const data = await userService.submitAnswerSheet(req.user._id, req.params.roadmapId, req.params.courseId, req.params.answerSheetId, req.body);
     res.status(httpStatus.OK).send(data);
   } catch (e) {
     throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, e);
@@ -230,6 +235,7 @@ module.exports = {
   createUser,
   getUsers,
   getUser,
+	editUser,
   updateUser,
   deleteUser,
   getUserProfile,

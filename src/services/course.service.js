@@ -1,6 +1,6 @@
 // const httpStatus = require('http-status');
 const mongoose = require('mongoose');
-const { ModuleProgress, User, Module, Course, Subject } = require('../models');
+const { ModuleProgress, User, Module, Course, Subject, CourseTransaction } = require('../models');
 const ApiError = require('../utils/ApiError');
 
 // eslint-disable-next-line camelcase
@@ -185,6 +185,52 @@ const findCourseById = async (courseId) => {
 	return Course.findById(courseId).populate('modules');
 }
 
+const getCourseTransactions = async (options, params) => {
+	const { userName, courseName, scholarship_paid, ...otherParams } = params;
+	const filter = {
+		...otherParams
+	};
+
+	if (userName) {
+		const users = await User.find({ name: { "$regex": userName, "$options": "i" } }).select('id,name');
+		const userIds = users.map((item) => item.id);
+		filter['user'] = { $in: userIds };
+	}
+
+	if (courseName) {
+		const courses = await Course.find({ title: { "$regex": courseName, "$options": "i" } }).select('id,title');
+		const courseIds = courses.map((item) => item.id);
+		filter['course'] = { $in: courseIds };
+	}
+
+	if (scholarship_paid === 'false' || scholarship_paid === 'true') {
+		filter['scholarship_paid'] = scholarship_paid === 'false' ? false : true;
+	}
+
+	const queryOptions = {
+		...options,
+    populate: 'user,course,jobEducation.job.company_id'
+	}
+  
+	const courseCollection = await CourseTransaction.paginate(filter, queryOptions);
+	courseCollection.results = courseCollection.results.map((item) => {
+		return {
+			id: item.id,
+			userName: item.user?.name,
+			courseName: item.course?.title,
+			position: item.jobEducation?.job?.title,
+			scholarship: item.scholarship,
+			scholarship_paid: item.scholarship,
+			paid_point: item.paid_point,
+			course_point: item.course_point,
+			companyName: item.jobEducation?.job?.company_id?.company_name,
+			unlocked_at: item.createdAt || new Date(Date.now()),
+		}
+	})
+
+	return courseCollection;
+}
+
 const seedLearningData = async () => {
 	const subject = await Subject.findOne({ name: 'MySQL' });
 	if (!subject) {
@@ -315,4 +361,5 @@ module.exports = {
 	findCourseById,
 	seedLearningData,
   updateCourseInfo,
+	getCourseTransactions,
 };

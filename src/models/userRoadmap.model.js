@@ -21,7 +21,7 @@ const userRoadmapSchema = mongoose.Schema(
     },
 		jobEducation: {
 			type: mongoose.Schema.Types.ObjectId,
-      ref: 'Job',
+      ref: 'JobEducation',
       required: true,
 		},
     description: {

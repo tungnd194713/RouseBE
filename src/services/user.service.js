@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 const httpStatus = require('http-status');
-const { User, UserProfile, Job, JobEducation, CertificateSubjects, CollegeSubjects, JobRequirement, Subject, Certificate, Major, CandidateApply, Course, UserRoadMap, Module, Discussion, Note, Mentor, MentorShift, MentorRating, Test, AnswerSheet } = require('../models');
+const { User, UserProfile, Job, JobEducation, CertificateSubjects, CollegeSubjects, JobRequirement, Subject, Certificate, Major, CandidateApply, Course, UserRoadMap, Module, Discussion, Note, Mentor, MentorShift, MentorRating, Test, AnswerSheet, Company, CourseTransaction } = require('../models');
 const ApiError = require('../utils/ApiError');
 
 const convertHourToNumber = (hourString) => {
@@ -907,7 +907,7 @@ const startJobEducation = async (userId, candidateApplyId) => {
 
   const currentCourse = await Course.findById(candidateApply.education_courses[0]);
   const userRoadmap = {
-    title: candidateApply.job.title + ' (Lộ trình học)',
+    title:'Lộ trình học cho vị trí ' + candidateApply.job.title,
     user: userId,
     job: candidateApply.job.id,
     current_course: candidateApply.education_courses[0],
@@ -918,7 +918,7 @@ const startJobEducation = async (userId, candidateApplyId) => {
         course: item,
         is_skipped: false,
         skippable: true,
-        progress: -0,
+        progress: 0,
         is_finished: false,
       }
     }),
@@ -1084,8 +1084,8 @@ const getUserRoadmapProgress = (userRoadmap) => {
   return totalDoneModule / totalModules * 100;
 }
 
-const getUserModule = async (userId, courseId, moduleId) => {
-  const userRoadmap = await UserRoadMap.findOne({ user: userId, is_finished: false });
+const getUserModule = async (userId, roadmapId, courseId, moduleId) => {
+  const userRoadmap = await UserRoadMap.findById(roadmapId);
 
   if (!userRoadmap) {
     throw new ApiError(httpStatus.NOT_FOUND, 'Roadmap not found');
@@ -1126,7 +1126,7 @@ const getUserModule = async (userId, courseId, moduleId) => {
   }
 }
 
-const watchedModule = async (userId, courseId, moduleId) => {
+const watchedModule = async (userId, roadmapId, courseId, moduleId) => {
   const course = await Course.findById(courseId);
   if (!course) throw new ApiError(httpStatus.NOT_FOUND, 'Course not found');
 
@@ -1135,7 +1135,7 @@ const watchedModule = async (userId, courseId, moduleId) => {
   const module = await Module.findById(moduleId);
   if (!module) throw new ApiError(httpStatus.NOT_FOUND, 'Module not found');
 
-  const userRoadmap = await UserRoadMap.findOne({ user: userId, is_finished: false });
+  const userRoadmap = await UserRoadMap.findById(roadmapId);
 
   if (!userRoadmap) {
     throw new ApiError(httpStatus.NOT_FOUND, 'Roadmap not found');
@@ -1165,8 +1165,8 @@ const watchedModule = async (userId, courseId, moduleId) => {
   return 'Module done';
 }
 
-const unlockRoadmapCourse = async (userId, courseId, body) => {
-	const userRoadmap = await UserRoadMap.findOne({ user: userId, is_finished: false });
+const unlockRoadmapCourse = async (userId, roadmapId, courseId, body) => {
+	const userRoadmap = await UserRoadMap.findById(roadmapId).populate('job');
 
 	if (!userRoadmap) throw new ApiError(httpStatus.NOT_FOUND, 'Roadmap not found');
 
@@ -1185,6 +1185,7 @@ const unlockRoadmapCourse = async (userId, courseId, body) => {
 		// Update the is_unlocked property of the milestone
     const user = await User.findById(userId);
     const point_cost = course.point_cost * ((100 - userRoadmap.scholarship) / 100);
+		let transaction = null;
     if (user.point_owned < point_cost) {
       throw new ApiError(httpStatus.BAD_REQUEST, 'Insufficient point');
     } else {
@@ -1192,7 +1193,26 @@ const unlockRoadmapCourse = async (userId, courseId, body) => {
       user.point_owned = user.point_owned - point_cost;
       await userRoadmap.save();
       await user.save();
+
+			transaction = await CourseTransaction.create({
+				user: userId,
+				course: courseId,
+				jobEducation: userRoadmap.jobEducation,
+				paid_point: point_cost,
+				course_point: course.point_cost,
+				scholarship: userRoadmap.scholarship,
+			})
     }
+
+		const company = await Company.findById(userRoadmap.job.company_id);
+		const scholarship_cost = course.point_cost * (userRoadmap.scholarship / 100)
+		if (company.point_owned < scholarship_cost) {
+			transaction.scholarship_paid = false;
+			await transaction.save();
+		} else {
+			company.point_owned -= scholarship_cost;
+		}
+		await company.save();
 	} else {
 		throw new ApiError(httpStatus.NOT_FOUND, 'Course not found');
 	}
@@ -1377,8 +1397,8 @@ const getAnswerSheetById = async (id, options = null) => {
   return answerSheetPromise;
 };
 
-const submitAnswerSheet = async (userId, courseId, answerSheetId, body) => {
-  const userRoadmap = await UserRoadMap.findOne({ user: userId, is_finished: false });
+const submitAnswerSheet = async (userId, roadmapId, courseId, answerSheetId, body) => {
+  const userRoadmap = await UserRoadMap.findById(roadmapId);
   if (!userRoadmap) throw new ApiError(httpStatus.FORBIDDEN, "Roadmap not found.");
   if (body.isFinished) body.finishedAt = new Date();
   const answerSheet = await AnswerSheet.findById(answerSheetId);
