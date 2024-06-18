@@ -929,6 +929,10 @@ const getAppliedJobs = async (user_id, options, params) => {
   return CandidateApply.paginate(filter, queryOptions);
 }
 
+const checkJobEducationExisted = async (userId) => {
+	return UserRoadMap.findOne({ user: userId, is_finished: false });
+}
+
 const startJobEducation = async (userId, candidateApplyId) => {
   const candidateApply = await CandidateApply.findById(candidateApplyId).populate('job');
   if (!candidateApply) {
@@ -1231,6 +1235,7 @@ const unlockRoadmapCourse = async (userId, roadmapId, courseId, body) => {
       throw new ApiError(httpStatus.BAD_REQUEST, 'Insufficient point');
     } else {
       userRoadmap.roadmap_milestone[milestoneIndex].is_unlocked = true; // Set newValue to your desired boolean value
+      userRoadmap.roadmap_milestone[milestoneIndex].started_at = new Date(Date.now()); // Set newValue to your desired boolean value
       user.point_owned = user.point_owned - point_cost;
       await userRoadmap.save();
       await user.save();
@@ -1685,4 +1690,5 @@ module.exports = {
   getTestKey,
   getUserRoadmapList,
   getRoadmapDetail,
+	checkJobEducationExisted,
 };

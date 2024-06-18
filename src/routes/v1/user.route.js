@@ -57,6 +57,7 @@ router.post('/educations/tests/:testId/sheets/create', auth(), userController.cr
 router.put('/educations/sheets/:answerSheetId', auth(), userController.updateAnswerSheetById);
 router.get('/educations/sheets/:answerSheetId', auth(), userController.getAnswerSheetById);
 router.put('/educations/:roadmapId/courses/:courseId/sheets/:answerSheetId/submit', auth(), userController.submitAnswerSheet);
+router.get('/educations/check-roadmap', auth(), userController.checkJobEducationExisted);
 
 module.exports = router;
 

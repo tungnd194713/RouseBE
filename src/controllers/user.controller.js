@@ -249,6 +249,15 @@ const getRoadmapDetail = catchAsync(async (req, res) => {
   }
 });
 
+const checkJobEducationExisted = catchAsync(async (req, res) => {
+  try {
+    const data = await userService.checkJobEducationExisted(req.user._id);
+    res.status(httpStatus.OK).send(data);
+  } catch (e) {
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, e);
+  }
+});
+
 module.exports = {
   createUser,
   getUsers,
@@ -281,4 +290,5 @@ module.exports = {
   uploadAvatar,
   getUserRoadmapList,
   getRoadmapDetail,
+	checkJobEducationExisted,
 };
