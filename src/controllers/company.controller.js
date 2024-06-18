@@ -172,6 +172,15 @@ const getEducationParticipant = catchAsync(async (req, res) => {
   }
 });
 
+const getProgressStatistic = catchAsync(async (req, res) => {
+  try {
+    const data = await companyService.getProgressStatistic(req.params.candidateId, req.user._id);
+    res.status(httpStatus.OK).send(data);
+  } catch (e) {
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, e);
+  }
+});
+
 module.exports = {
 	getCompanyJobs,
 	me,
@@ -198,4 +207,5 @@ module.exports = {
   createNewEducationRequest,
   getEducationDetail,
   getEducationParticipant,
+  getProgressStatistic,
 }

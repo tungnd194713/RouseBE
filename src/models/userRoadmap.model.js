@@ -79,6 +79,9 @@ const userRoadmapSchema = mongoose.Schema(
 					type: Boolean,
 					default: false,
 				},
+        started_at: {
+          type: Boolean,
+        }
       },
     ],
     done_courses: [{

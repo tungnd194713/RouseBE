@@ -1,4 +1,4 @@
-const { Company, Job, CandidateApply, Subject, College, Certificate, Course, Major, CertificateSubjects, CollegeSubjects, JobEducation, UserProfile, User, UserRoadMap, ModuleProgressLog } = require('../models');
+const { Company, Job, CandidateApply, Subject, College, Certificate, Course, Major, CertificateSubjects, CollegeSubjects, JobEducation, UserProfile, User, UserRoadMap, ModuleProgressLog, AnswerSheet, Test } = require('../models');
 const JobRequirement = require('../models/jobRequirement.model');
 const ApiError = require('../utils/ApiError');
 const httpStatus = require('http-status');
@@ -1443,6 +1443,116 @@ const getEducationParticipant = async (companyId, educationId) => {
   return userRoadmapData;
 }
 
+const getProgressStatistic = async (candidateApplyId, companyId) => {
+  const candidateApply = await CandidateApply.findOne({ _id: candidateApplyId, company: companyId });
+
+  if (!candidateApply || !candidateApply.education_applied) throw new ApiError(httpStatus.NOT_FOUND, 'CV not found');
+
+  const user = await User.findById(candidateApply.user);
+
+  if (!user) throw new ApiError(httpStatus.NOT_FOUND, 'User not found');
+
+  const userRoadmap = await UserRoadMap.findOne({ user: candidateApply.user, job: candidateApply.job }).populate('roadmap_milestone.course')
+  .populate({
+    path: 'roadmap_milestone.course',
+    populate: {
+      path: 'modules',
+      model: 'Module',
+    },
+  })
+  .populate({
+    path: 'roadmap_milestone.course',
+    populate: {
+      path: 'tests',
+      model: 'Test',
+    },
+  });
+  if (!userRoadmap) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'Roadmap not found');
+  }
+
+  const courseArr = userRoadmap.roadmap_milestone.map((item) => item.course.id || item.course._id);
+
+  // Step 2: Fetch module progress logs
+  let moduleProgressLogs = await ModuleProgressLog.find({ user: user.id, course: { $in: courseArr } });
+
+  // Step 3: Fetch test results
+  const answerSheets = await AnswerSheet.find({ user: user.id });
+
+  // Step 4: Transform data into the desired format
+  const courseProgressData = userRoadmap.roadmap_milestone.map(milestone => {
+    const course = milestone.course;
+
+    // Get modules watch time
+    const modules = course.modules.map(mod => {
+      const logs = moduleProgressLogs.filter(log => log.module.toString() === mod._id?.toString() || log.module.toString() === mod.id?.toString());
+      const totalWatchTime = logs.reduce((sum, log) => sum + log.video_update_time - log.video_start_time, 0);
+
+      return {
+        id: mod._id?.toString(),
+        name: mod.name,
+        watch_time: Math.round(totalWatchTime),
+      };
+    });
+
+    const totalWatchTime = modules.reduce((sum, mod) => sum + mod.watch_time, 0);
+
+    // Get test results
+    const testResults = milestone.done_tests.map(testId => {
+      const answerSheet = answerSheets.find(sheet => sheet.testId.toString() === testId.toString() && sheet.isFinished);
+      return answerSheet ? answerSheet.mark : 0;
+    });
+
+    const tests = course?.tests?.map((test) => {
+      const answerSheet = answerSheets.find(sheet => (sheet.testId.toString() === test.id?.toString() || sheet.testId.toString() === test._id?.toString()) && sheet.isFinished);
+      return {
+        id: test.id || test._id,
+        name: test.name,
+        is_finished: answerSheet ? true : false,
+        finished_at: answerSheet.finishedAt ? answerSheet.finishedAt.toISOString().split('T')[0] : null,
+        max_mark: test.questions.length,
+        mark: answerSheet.mark || 0,
+      };
+    })
+
+    const averageTestResult = testResults.length > 0
+      ? testResults.reduce((sum, mark) => sum + mark, 0) / testResults.length
+      : 0;
+
+    return {
+      id: course._id.toString(),
+      courseName: course.name,
+      started_at: milestone.started_at ? milestone.started_at.toISOString().split('T')[0] : null,
+      finished_at: milestone.finished_date ? milestone.finished_date.toISOString().split('T')[0] : null,
+      total_watch_time: totalWatchTime,
+      average_test_result: Math.round(averageTestResult),
+      modules: modules,
+      tests: tests,
+    };
+  });
+
+  moduleProgressLogs = moduleProgressLogs.reduce((accumulator, log) => {
+    const key = `${log.course}-${log.module}`;
+    if (!accumulator[key]) {
+      accumulator[key] = {
+        module: log.module,
+        course: log.course,
+        total_video_update_time: log.video_update_time - log.video_start_time,
+        logId: log.logId,
+        user: log.user,
+        created_at: log.created_at,
+      };
+    } else {
+      accumulator[key].total_video_update_time += log.video_update_time;
+    }
+    return accumulator;
+  }, {});
+
+  moduleProgressLogs = Object.values(moduleProgressLogs);
+
+  return {courseProgressData, moduleProgressLogs};
+}
+
 const createNewEducationRequest = async (companyId, body) => {
   const data = {
     ...body,
@@ -1479,4 +1589,5 @@ module.exports = {
   createNewEducationRequest,
   getEducationDetail,
   getEducationParticipant,
+  getProgressStatistic,
 }

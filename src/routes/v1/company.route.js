@@ -36,6 +36,7 @@ router.get('/candidate-applies/', auth(), companyController.getCandidateApplies)
 router.post('/candidate-applies/accept-education/:candidateId', auth(), companyController.acceptEducation);
 router.post('/candidate-applies/accept-interview/:candidateId', auth(), companyController.acceptInterview);
 router.get('/candidate-applies/education-progress/:candidateId', auth(), companyController.getCandidateEducationProgress);
+router.get('/candidate-applies/education-statistic/:candidateId', auth(), companyController.getProgressStatistic);
 router.get('/candidate-applies/matching-point/:candidateId', auth(), companyController.getCVMatchingPoint);
 router.post('/candidate-applies/update-status/:candidateId', auth(), companyController.candidateUpdate);
 router.post('/educations/list', auth(), companyController.getEducationList);
