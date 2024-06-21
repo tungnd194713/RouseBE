@@ -42,6 +42,11 @@ const findCourseById = catchAsync(async (req, res) => {
   res.status(httpStatus.OK).send(course);
 });
 
+const getCourseTransactions = catchAsync(async (req, res) => {
+  const course = await courseService.getCourseTransactions(req.query, req.body);
+  res.status(httpStatus.OK).send(course);
+});
+
 const seedLearningData = catchAsync(async (req, res) => {
   const course = await courseService.seedLearningData();
   res.status(httpStatus.OK).send(course);
@@ -56,5 +61,6 @@ module.exports = {
 	addModuleToCourse,
 	findCourseById,
 	seedLearningData,
-  updateCourseInfo
+  updateCourseInfo,
+	getCourseTransactions,
 };

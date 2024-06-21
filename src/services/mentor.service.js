@@ -276,6 +276,50 @@ const getRatingList = async (userId, params, options) => {
   return MentorRating.paginate(filter, queryOptions)
 }
 
+const getMentors = async (params, options) => {
+	const currentDay = new Date();
+
+	const filter = {}
+	const queryOptions = {
+    ...options,
+		populate: 'user,ratings,shifts',
+  }
+  const paginatedCollection = await Mentor.paginate(filter, queryOptions)
+	const mentors = paginatedCollection.results.map(mentor => {
+    const totalHours = mentor.shifts.reduce((total, shift) => {
+      const shiftStartDate = new Date(shift.date_start);
+      const shiftEndDate = shift.is_finished ? new Date(shift.date_end) : currentDay;
+
+      let totalShiftHours = 0;
+
+      // Iterate through each week from shiftStartDate to shiftEndDate
+      for (let date = new Date(shiftStartDate); date <= shiftEndDate; date.setDate(date.getDate() + 7)) {
+        totalShiftHours += calculateWeeklyHours(shift.shift_days);
+      }
+
+      return total + totalShiftHours;
+    }, 0);
+
+    return {
+      ...mentor.toObject(),
+      totalWorkHours: totalHours,
+			name: mentor.user.name,
+			shift_count: mentor.shifts.length,
+			email: mentor.user.email
+    };
+  });
+	return mentors;
+}
+
+function calculateWeeklyHours(shiftDays) {
+  return Object.values(shiftDays).reduce((total, day) => {
+    if (day.start_hour != null && day.end_hour != null) {
+      return total + (day.end_hour - day.start_hour);
+    }
+    return total;
+  }, 0);
+}
+
 module.exports = {
   findMentor,
 	seedMentor,
@@ -288,5 +332,6 @@ module.exports = {
 	updateShift,
 	deleteShift,
 	getRatingList,
+	getMentors,
 };
 

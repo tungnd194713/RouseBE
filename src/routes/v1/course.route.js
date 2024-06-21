@@ -28,6 +28,7 @@ router.post('/seed-learning-data/', auth(), courseController.seedLearningData);
 router.post('/:courseId/add-module', auth(), courseController.addModuleToCourse);
 router.post('/:courseId/', auth(), courseController.findCourseById);
 router.put('/:courseId/', upload.none(), auth(), courseController.updateCourseInfo);
+router.post('/transactions/list', auth(), courseController.getCourseTransactions);
 // router.post('/module/:module_id/discussion/:discussion_id/reply', courseController.updateModuleProgress);
 
 module.exports = router;

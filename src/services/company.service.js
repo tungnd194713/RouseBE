@@ -447,17 +447,17 @@ const acceptEducation = async (candidateApplyId) => {
     await candidateApply.save({ session });
 
     // Create user roadmap
-    const jobEducation = await JobEducation.findOne({ job: candidateApply.job }).session(session);
-    await UserRoadMap.create([{
-      title: 'Lộ trình học cho vị trí ' + candidateApply.job.title,
-      user: candidateApply.user,
-      jobEducation: jobEducation.id || jobEducation._id,
-      job: candidateApply.job.id || candidateApply.job._id,
-      scholarship: jobEducation.scholarship,
-      progress: 0,
-      applied_date: Date.now(),
-      roadmap_milestone: jobEducation.courses.map((course) => ({ course: course.id || course._id })),
-    }], { session });
+    // const jobEducation = await JobEducation.findOne({ job: candidateApply.job }).session(session);
+    // await UserRoadMap.create([{
+    //   title: 'Lộ trình học cho vị trí ' + candidateApply.job.title,
+    //   user: candidateApply.user,
+    //   jobEducation: jobEducation.id || jobEducation._id,
+    //   job: candidateApply.job.id || candidateApply.job._id,
+    //   scholarship: jobEducation.scholarship,
+    //   progress: 0,
+    //   applied_date: Date.now(),
+    //   roadmap_milestone: jobEducation.courses.map((course) => ({ course: course.id || course._id })),
+    // }], { session });
 
     await session.commitTransaction();
     session.endSession();
@@ -1071,22 +1071,25 @@ const openJobEducation = async (jobId, companyId) => {
   const jobEducation = await JobEducation.findOne({ job: jobId }).populate('courses');
   if (!jobEducation) throw new ApiError(httpStatus.NOT_FOUND, 'Education not found');
 
-  if (!jobEducation.scholarship_paid) {
-		jobEducation.status = 3;
-		await jobEducation.save();
-		const totalPointCost = coursesArray.reduce((total, course) => {
-			return total + course.point_cost;
-		}, 0);
+  // if (!jobEducation.scholarship_paid) {
+	// 	jobEducation.status = 3;
+	// 	await jobEducation.save();
+	// 	const totalPointCost = coursesArray.reduce((total, course) => {
+	// 		return total + course.point_cost;
+	// 	}, 0);
 
-		const scholarship = totalPointCost * (jobEducation.scholarship / 100) * jobEducation.number_trainings;
-		const company = await Company.findById(companyId);
-		if (company.point_owned < scholarship) {
-			throw new ApiError(httpStatus.BAD_REQUEST, 'Insufficient point');
-		} else {
-			company.point_owned -= scholarship;
-		}
-		await company.save();
-	}
+	// 	const scholarship = totalPointCost * (jobEducation.scholarship / 100) * jobEducation.number_trainings;
+	// 	const company = await Company.findById(companyId);
+	// 	if (company.point_owned < scholarship) {
+	// 		throw new ApiError(httpStatus.BAD_REQUEST, 'Insufficient point');
+	// 	} else {
+	// 		company.point_owned -= scholarship;
+	// 	}
+	// 	await company.save();
+	// }
+
+	jobEducation.status = 3;
+	await jobEducation.save();
 
   return 'Education updated';
 }

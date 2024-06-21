@@ -17,6 +17,9 @@ const userSchema = mongoose.Schema(
     phone_number: {
       type: String,
     },
+		address: {
+			type: String,
+		},
     email: {
       type: String,
       required: true,
@@ -40,6 +43,11 @@ const userSchema = mongoose.Schema(
       //   }
       // },
       private: true, // used by the toJSON plugin
+    },
+		status: {
+      type: String,
+      enum: ['active', 'inactive', 'suspended'],
+      default: 'active',
     },
     role: {
       type: String,
