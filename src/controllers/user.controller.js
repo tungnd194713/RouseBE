@@ -97,6 +97,11 @@ const startJobEducation = catchAsync(async (req, res) => {
   res.status(httpStatus.OK).send(data);
 });
 
+const refuseJobEducation = catchAsync(async (req, res) => {
+  const data = await userService.refuseJobEducation(req.user._id, req.params.candidateApplyId);
+  res.status(httpStatus.OK).send(data);
+});
+
 const getCurrentEducation = catchAsync(async (req, res) => {
   const data = await userService.getCurrentEducation(req.user._id);
   res.status(httpStatus.OK).send(data);
@@ -275,4 +280,5 @@ module.exports = {
   uploadAvatar,
   getUserRoadmapList,
   getRoadmapDetail,
+  refuseJobEducation,
 };
