@@ -10,6 +10,34 @@ const getAllSubject = async (body) => {
 	return Subject.find(findCondition);
 }
 
+const getSubjectList = async (params, body) => {
+	const findCondition = {}
+	if (body.name) {
+		findCondition.name = { "$regex": body.name, "$options": "i" };
+	}
+	const subjects = await Subject.find(findCondition).limit(params.per_page ? Number(params.per_page) : 10).skip(params.current_page ? (Number(params.current_page) - 1) * Number(params.per_page) : 0).sort('-createdAt');
+	const total = await Subject.countDocuments();
+	return {
+		data: subjects,
+		meta: {
+			total,
+			per_page: params.per_page,
+			current_page: params.current_page,
+		}
+	}
+}
+
+
+const addSubject = async (body) => {
+	const subject = await Subject.findOne({ name: body.name })
+	if (subject) {
+		throw new ApiError(httpStatus.NOT_ACCEPTABLE, 'Subject existed!');
+	}
+	return Subject.create({
+		name: body.name,
+	});
+}
+
 const getCertificates = async (params) => {
 	const searchData = {};
 	if (params.name) {
@@ -220,4 +248,6 @@ module.exports = {
 	addCertificate,
   addMajor,
   getMajors,
+	addSubject,
+	getSubjectList,
 }

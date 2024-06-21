@@ -74,6 +74,23 @@ const getCompanyJobs = async () => {
 	return Company.insertMany(companiesData);
 }
 
+const getAllJobs = async (userId) => {
+	const jobEducation = await JobEducation.find({ company: userId });
+	const jobEducationIds = jobEducation.map((item) => item.job.toString());
+	return Job.find({ company_id: userId, _id: { $nin: jobEducationIds } }).select('id title');
+}
+
+const requestEducationForJob = async (userId, jobId, body) => {
+	const job = await Job.findOne({ _id: jobId, company: userId });
+	if (!job) throw new ApiError(httpStatus.NOT_FOUND, 'Job not found');
+
+	return JobEducation.create({
+		...body,
+		company: userId,
+		job: jobId,
+	})
+}
+
 const getCompanyByEmail = async (email) => {
   return Company.findOne({ email });
 };
@@ -96,13 +113,14 @@ const createJob = async (company_id, data) => {
 	});
 
   if (job) {
-		if (data.accept_education) {
+		if (data.accept_education && data.accept_education !== "undefined") {
 			await JobEducation.create({
 				company: company_id,
 				job: job.id,
 				max_education_month: data.max_education_month,
 				scholarship: data.scholarship,
         number_trainings: data.number_trainings,
+        custom_requirement: data.custom_requirement,
 			})
 		}
 
@@ -199,6 +217,7 @@ const updateJobById = async (jobId, body) => {
 				max_education_month: body.max_education_month,
 				scholarship: body.scholarship,
         number_trainings: body.number_trainings,
+        custom_requirement: body.custom_requirement,
 			})
     }
   }
@@ -331,6 +350,7 @@ const getJobById = async (id) => {
   job = {
     ...job.toObject(),
     max_education_month: education ? education.max_education_month : null,
+    number_trainings: education ? education.number_trainings : null,
     scholarship: education ? education.scholarship : null,
     id: job._id,
     education: education ? education.toObject() : null,
@@ -1593,4 +1613,6 @@ module.exports = {
   getEducationDetail,
   getEducationParticipant,
   getProgressStatistic,
+	getAllJobs,
+	requestEducationForJob,
 }

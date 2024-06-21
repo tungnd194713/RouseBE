@@ -366,7 +366,7 @@ const getCourseDetail = async (jobEducationId, courseId) => {
 
   if (!jobEducation) throw new ApiError(httpStatus.NOT_FOUND, 'Request not found');
 
-  const course = await Course.findById(courseId).populate('modules skill_tags.skill');
+  const course = await Course.findById(courseId).populate('modules skill_tags.skill tests');
   return {
 		...jobEducation.toObject(),
 		...course.toObject(),
@@ -498,16 +498,24 @@ const createInstructorCourse = async (jobEducationId, body) => {
   const createdCourse = await Course.create(courseParams);
 
   if (!createdCourse)  throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'Something wrong');
-
-  const instructorCourseParams = {
-    jobEducation: jobEducationId,
-    course: createdCourse.id || createdCourse._id,
-    instructor: body.instructor,
-    requirement: body.requirement,
-    deadline: body.deadline,
-  }
-
-  return InstructorCourse.create(instructorCourseParams);
+	let instructorCourseParams = {}
+	if (body.isInstructor === "true") {
+		instructorCourseParams = {
+			jobEducation: jobEducationId,
+			course: createdCourse.id || createdCourse._id,
+			instructor: body.instructor,
+			requirement: body.requirement,
+			deadline: body.deadline,
+		}
+	} else {
+		instructorCourseParams = {
+			jobEducation: jobEducationId,
+			course: createdCourse.id || createdCourse._id,
+			isAdmin: true,
+		}
+	}
+	return InstructorCourse.create(instructorCourseParams);
+  
 }
 
 const getListInstructorCourse = async (params, options) => {
@@ -658,7 +666,7 @@ const createNewQuestionToTest = async (testId, body) => {
 
   await test.save();
 
-  return test;
+  return newQuestion;
 }
 
 const getTestById = async (testId) => {

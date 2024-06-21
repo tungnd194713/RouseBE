@@ -3,6 +3,16 @@ const { subjectService } = require('../services');
 const catchAsync = require('../utils/catchAsync');
 // const ApiError = require('../utils/ApiError');
 
+const addSubject = catchAsync(async (req, res) => {
+  const result = await subjectService.addSubject(req.body);
+  res.status(httpStatus.OK).send(result);
+});
+
+const getSubjectList = catchAsync(async (req, res) => {
+  const result = await subjectService.getSubjectList(req.query, req.body);
+  res.status(httpStatus.OK).send(result);
+});
+
 const getCertificates = catchAsync(async (req, res) => {
   const result = await subjectService.getCertificates(req.query);
   res.status(httpStatus.OK).send(result);
@@ -70,4 +80,6 @@ module.exports = {
   addSubjectToMajor,
   deleteSubjectFromMajor,
   addMajor,
+	addSubject,
+	getSubjectList,
 };

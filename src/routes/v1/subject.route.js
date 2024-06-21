@@ -15,5 +15,7 @@ router.post('/majors/:id/subjects', auth(), subjectController.addSubjectToMajor)
 router.delete('/majors/:id/subjects/:subject_id', auth(), subjectController.deleteSubjectFromMajor);
 router.post('/majors', auth(), subjectController.addMajor);
 router.post('/subjects', auth(), subjectController.getAllSubject);
+router.post('/subjects/list', auth(), subjectController.getSubjectList);
+router.post('/subjects/create', auth(), subjectController.addSubject);
 
 module.exports = router;

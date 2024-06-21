@@ -48,6 +48,11 @@ const updateJobById = catchAsync(async (req, res) => {
   }
 });
 
+const getAllJobs = catchAsync(async (req, res) => {
+  const jobs = await companyService.getAllJobs(req.user._id);
+  res.status(httpStatus.OK).send(jobs);
+});
+
 const getJobs = catchAsync(async (req, res) => {
   const jobs = await companyService.getJobs(req.user._id, req.query);
   res.status(httpStatus.OK).send(jobs);
@@ -181,6 +186,15 @@ const getProgressStatistic = catchAsync(async (req, res) => {
   }
 });
 
+const requestEducationForJob = catchAsync(async (req, res) => {
+  try {
+    const data = await companyService.requestEducationForJob(req.user._id, req.params.jobId, req.body);
+    res.status(httpStatus.OK).send(data);
+  } catch (e) {
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, e);
+  }
+});
+
 module.exports = {
 	getCompanyJobs,
 	me,
@@ -208,4 +222,6 @@ module.exports = {
   getEducationDetail,
   getEducationParticipant,
   getProgressStatistic,
+	getAllJobs,
+	requestEducationForJob,
 }

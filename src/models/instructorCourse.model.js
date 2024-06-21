@@ -14,13 +14,15 @@ const instructorCourseSchema = mongoose.Schema({
     type: mongoose.SchemaTypes.ObjectId,
     ref: 'Course'
   },
+	isAdmin: {
+		type: Boolean,
+    default: false,
+	},
   deadline: {
     type: Date,
-    required: true,
   },
   requirement: {
     type: String,
-    required: true,
   },
   is_done: {
     type: Boolean,
