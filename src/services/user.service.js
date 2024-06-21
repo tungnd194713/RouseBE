@@ -947,36 +947,56 @@ const startJobEducation = async (userId, candidateApplyId) => {
   if (!candidateApply.education_courses || !candidateApply.education_courses.length) {
     throw new ApiError(httpStatus.NOT_FOUND, 'Unable to start education');
   }
-	const jobEducation = JobEducation.findOne({ job: candidateApply.job });
-	if (!jobEducation) throw new ApiError(httpStatus.NOT_FOUND, 'Education not found');
+	if (candidateApply.status === 3) {
+    const jobEducation = JobEducation.findOne({ job: candidateApply.job });
+    if (!jobEducation) throw new ApiError(httpStatus.NOT_FOUND, 'Education not found');
 
-  const currentCourse = await Course.findById(candidateApply.education_courses[0]);
-  const userRoadmap = {
-    title:'Lộ trình học cho vị trí ' + candidateApply.job.title,
-    user: userId,
-    job: candidateApply.job.id,
-    current_course: candidateApply.education_courses[0],
-    current_module: currentCourse?.modules[0],
-		scholarship: jobEducation.scholarship || 0,
-    roadmap_milestone: candidateApply.education_courses.map((item) => {
-      return {
-        course: item,
-        is_skipped: false,
-        skippable: true,
-        progress: 0,
-        is_finished: false,
-      }
-    }),
-    applied_date: Date.now(),
-    is_finished: false,
-  };
-  const createdRoadmap = await UserRoadMap.create(userRoadmap);
-  if (!createdRoadmap) {
-    throw new ApiError(httpStatus.NOT_FOUND, 'Something wrong');
+    const currentCourse = await Course.findById(candidateApply.education_courses[0]);
+    const userRoadmap = {
+      title:'Lộ trình học cho vị trí ' + candidateApply.job.title,
+      user: userId,
+      job: candidateApply.job.id,
+      current_course: candidateApply.education_courses[0],
+      current_module: currentCourse?.modules[0],
+      scholarship: jobEducation.scholarship || 0,
+      roadmap_milestone: candidateApply.education_courses.map((item) => {
+        return {
+          course: item,
+          is_skipped: false,
+          skippable: true,
+          progress: 0,
+          is_finished: false,
+        }
+      }),
+      applied_date: Date.now(),
+      is_finished: false,
+    };
+    const createdRoadmap = await UserRoadMap.create(userRoadmap);
+    if (!createdRoadmap) {
+      throw new ApiError(httpStatus.NOT_FOUND, 'Something wrong');
+    }
+    candidateApply.status = 4;
+    await candidateApply.save()
+    return 'Education started';
+  } else {
+    throw new ApiError(httpStatus.NOT_FOUND, 'Unable to start education');
   }
-  candidateApply.status = 4;
-  await candidateApply.save()
-  return 'Education started';
+}
+
+const refuseJobEducation = async (userId, candidateApplyId) => {
+  const candidateApply = await CandidateApply.findById(candidateApplyId).populate('job');
+  if (!candidateApply) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'CV not found');
+  }
+  if (candidateApply.user.toString() !== userId.toString()) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'Not authorized');
+  }
+
+  if (candidateApply.status === 3) {
+    candidateApply.status = 8;
+    await candidateApply.save()
+    return 'Education refused';
+  }
 }
 
 const getCurrentEducation = async (userId) => {
@@ -1690,5 +1710,6 @@ module.exports = {
   getTestKey,
   getUserRoadmapList,
   getRoadmapDetail,
+  refuseJobEducation,
 	checkJobEducationExisted,
 };

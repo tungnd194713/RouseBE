@@ -25,6 +25,9 @@ const jobEducationSchema = mongoose.Schema(
 			type: Number,
 			required: true,
 		},
+    custom_requirement: {
+      type: String,
+    },
     status: {
       type: Number,
       enum: [1, 2, 3, 4],

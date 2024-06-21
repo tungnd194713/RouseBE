@@ -42,6 +42,7 @@ router.post('/jobs/suggest', auth(), userController.suggestJobs);
 router.get('/jobs/:jobId', auth(), userController.getDetailJob);
 router.post('/candidate-applies/', upload.none(), auth(), userController.applyJob);
 router.post('/candidate-applies/:candidateApplyId/start-education', auth(), userController.startJobEducation);
+router.post('/candidate-applies/:candidateApplyId/refuse-education', auth(), userController.refuseJobEducation);
 router.get('/educations/list', auth(), userController.getUserRoadmapList);
 router.get('/educations/detail/:roadmapId', auth(), userController.getRoadmapDetail);
 router.get('/educations/current', auth(), userController.getCurrentEducation);
