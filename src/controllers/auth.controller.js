@@ -1,6 +1,7 @@
 const httpStatus = require('http-status');
 const catchAsync = require('../utils/catchAsync');
-const { authService, userService, tokenService, emailService } = require('../services');
+const { authService, userService, tokenService, emailService, companyService } = require('../services');
+const ApiError = require('../utils/ApiError');
 
 const register = catchAsync(async (req, res) => {
   const user = await userService.createUser(req.body);
@@ -11,6 +12,9 @@ const register = catchAsync(async (req, res) => {
 const login = catchAsync(async (req, res) => {
   const { email, password, role } = req.body;
   const user = await authService.loginUserWithEmailAndPassword(email, password, role);
+  if (user.status === 'suspended' || user.status === 'Suspended') {
+    throw new ApiError(httpStatus.FORBIDDEN, 'Người dùng đã bị chặn bởi hệ thống!');
+  }
   const tokens = await tokenService.generateAuthTokens(user);
   const access_token = tokens.access.token;
   const refresh_token = tokens.refresh.token;
@@ -19,9 +23,18 @@ const login = catchAsync(async (req, res) => {
   res.send({ user, tokens, access_token, refresh_token, expires_in, token_type });
 });
 
+const companyRegister = catchAsync(async (req, res) => {
+  const company = await companyService.createCompany(req.body);
+  const tokens = await tokenService.generateAuthTokens(company);
+  res.status(httpStatus.CREATED).send({ user: company, tokens, access_token: tokens.access.token });
+});
+
 const companyLogin = catchAsync(async (req, res) => {
   const { email, password } = req.body;
   const company = await authService.loginCompanyWithEmailAndPassword(email, password);
+  if (company.status === 'suspended' || company.status === 'Suspended') {
+    throw new ApiError(httpStatus.FORBIDDEN, 'Người dùng đã bị chặn bởi hệ thống!');
+  }
   const tokens = await tokenService.generateAuthTokens(company);
   res.send({ user: company, tokens, access_token: tokens.access.token });
 });
@@ -68,4 +81,5 @@ module.exports = {
   sendVerificationEmail,
   verifyEmail,
 	companyLogin,
+  companyRegister,
 };

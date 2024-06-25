@@ -20,6 +20,7 @@ let uploadFile = multer({
 });
 
 router.post('/login', authController.companyLogin);
+router.post('/register', authController.companyRegister);
 router.get('/get', companyController.getCompanyJobs);
 router.get('/me', auth(), companyController.me);
 router.post('/profiles/update-detail', uploadFile.single('logo'), auth(), companyController.updateCompanyInfo);
@@ -28,7 +29,9 @@ router.post('/jobs/update/:jobId', uploadFile.single('image_job'), auth(), compa
 router.get('/jobs/all', auth(), companyController.getAllJobs);
 router.get('/jobs/', auth(), companyController.getJobs);
 router.get('/jobs/:id', auth(), companyController.getJobById);
+router.post('/jobs/:id/change-status', auth(), companyController.changeJobStatus);
 router.get('/jobs/:id/education-open', auth(), companyController.openJobEducation);
+router.get('/jobs/:id/education-close', auth(), companyController.closeJobEducation);
 router.get('/jobs/:id/education-toggle', auth(), companyController.toggleJobEducation);
 router.post('/jobs/:id/change-request', auth(), companyController.sendChangeRequest);
 router.get('/candidate-applies/:userId', auth(), companyController.getUserCv);
@@ -45,6 +48,8 @@ router.post('/educations/create', auth(), companyController.createNewEducationRe
 router.get('/educations/detail/:id', auth(), companyController.getEducationDetail);
 router.get('/educations/participants/:id', auth(), companyController.getEducationParticipant);
 router.post('/educations/create/:jobId', auth(), companyController.requestEducationForJob);
+router.post('/invoices/courses', auth(), companyController.getCourseUnlockHistory);
+router.post('/invoices/courses/:transactionId', auth(), companyController.payCourse);
 router.get('/requirement-options', auth(), companyController.getRequirementOptions);
 router.delete('/jobs/:id', auth(), companyController.deleteJob);
 router.post('/seed-subject', companyController.seedSubject);

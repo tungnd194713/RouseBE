@@ -1,7 +1,12 @@
 // const httpStatus = require('http-status');
 const mongoose = require('mongoose');
-const { ModuleProgress, User, Module, Course, Subject, CourseTransaction } = require('../models');
+const { ModuleProgress, User, Module, Course, Subject, CourseTransaction, Test, Question } = require('../models');
 const ApiError = require('../utils/ApiError');
+
+const { OpenAI} = require('openai');
+const httpStatus = require('http-status');
+
+const openai = new OpenAI();
 
 // eslint-disable-next-line camelcase
 const getCourse = async (_id, user_id) => {
@@ -211,7 +216,7 @@ const getCourseTransactions = async (options, params) => {
 		...options,
     populate: 'user,course,jobEducation.job.company_id'
 	}
-  
+
 	const courseCollection = await CourseTransaction.paginate(filter, queryOptions);
 	courseCollection.results = courseCollection.results.map((item) => {
 		return {
@@ -220,7 +225,7 @@ const getCourseTransactions = async (options, params) => {
 			courseName: item.course?.title,
 			position: item.jobEducation?.job?.title,
 			scholarship: item.scholarship,
-			scholarship_paid: item.scholarship,
+			scholarship_paid: item.scholarship_paid,
 			paid_point: item.paid_point,
 			course_point: item.course_point,
 			companyName: item.jobEducation?.job?.company_id?.company_name,
@@ -351,6 +356,123 @@ const seedLearningData = async () => {
   });
 }
 
+const seedModuleData = async (body) => {
+  const course = await Course.findById(body.courseId);
+  if (!course) {
+		throw new ApiError(httpStatus.NOT_FOUND, 'Course not found!')
+  }
+	const title = body.title
+	const level = body.level
+	if (!title || !level) {
+		throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'Wrong!')
+	}
+	const promt = `seed me a static js array of the modules of the course of ${title} ${level}, follow this mongo model, at least 5 modules, return as JSON format, no yapping, only return the array, not the initialization variable:
+const moduleSchema = mongoose.Schema(
+  {
+    name: String,
+    description: String,
+    video: String,
+    estimated_time: Number, // Hours
+    video_duration: {
+      type: Number,
+      default: 0,
+    },
+		is_video_uploaded: {
+			type: Boolean,
+			default: false,
+		}
+  },
+  {
+    timestamps: true,
+  }
+);`
+	const completion = await openai.chat.completions.create({
+    messages: [{"role": "user", "content": promt}],
+    model: "gpt-4o",
+  });
+
+  try {
+    const moduleData = JSON.parse(completion.choices[0].message.content);
+
+    if (moduleData && moduleData.length) {
+      const insertedModules = await Module.insertMany(moduleData);
+      if (insertedModules && insertedModules.length) {
+        const moduleIds = insertedModules.map((item) => item.id || item._id);
+        course.modules.push(...moduleIds);
+        await course.save();
+        return 'Module data seeded!';
+      }
+    }
+  } catch (e) {
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'Something wrong');
+  }
+}
+
+const seedQuestionData = async (body) => {
+  const course = await Course.findById(body.courseId).populate('skill_tags.skill');
+  if (!course) {
+		throw new ApiError(httpStatus.NOT_FOUND, 'Course not found!')
+  }
+  const test = await Test.findById(body.testId);
+  if (!test) {
+		throw new ApiError(httpStatus.NOT_FOUND, 'Test not found!')
+  }
+	const title = course.skill_tags[0].skill.name
+	const level = course.skill_tags[0].level
+	if (!title || !level) {
+		throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'Wrong!')
+	}
+	const promt = `seed me a bunch of multiple choice questions of the course of ${title} ${level}, follow this mongoose model, at least 10 questions, return as JSON format, no yapping, only return the array, not the initialization variable, remember, the questions about ${title} with ${level} level:
+const choiceSchema = new Schema({
+    content: {
+        type: String,
+    },
+    isTrue: { type: Boolean, private: true }
+}, {
+    toObject: { getters: true },
+    toJSON: { getters: true },
+})
+
+const questionSchema = new Schema({
+    question: {
+        type: String,
+    },
+    choices: [choiceSchema],
+    answer: {
+      type: String,
+    },
+    grade: Number,
+}, {
+    timestamps: true,
+    toObject: { getters: true, setters: true, virtual: true },
+    toJSON: { getters: true, setters: true, virtual: true },
+}
+);`
+console.log(promt)
+	const completion = await openai.chat.completions.create({
+    messages: [{"role": "user", "content": promt}],
+    model: "gpt-4o",
+  });
+
+  try {
+    const questionData = JSON.parse(completion.choices[0].message.content);
+    if (questionData && questionData.length) {
+      console.log(questionData)
+      const insertedQuestions = await Question.insertMany(questionData);
+      if (insertedQuestions && insertedQuestions.length) {
+        const questionsIds = insertedQuestions.map((item) => item.id || item._id);
+        test.questions.push(...questionsIds);
+        await test.save();
+        return 'Questions seeded!';
+      }
+    }
+  } catch (e) {
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'Something wrong');
+  }
+}
+
+
+
 module.exports = {
   getCourse,
   updateModuleProgress,
@@ -362,4 +484,6 @@ module.exports = {
 	seedLearningData,
   updateCourseInfo,
 	getCourseTransactions,
+  seedModuleData,
+  seedQuestionData,
 };

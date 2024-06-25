@@ -1,6 +1,7 @@
 const httpStatus = require('http-status');
 const { courseService } = require('../services');
 const catchAsync = require('../utils/catchAsync');
+const ApiError = require('../utils/ApiError');
 
 const getCourse = catchAsync(async (req, res) => {
   const courses = await courseService.getCourse(req.params.module_id, req.user._id);
@@ -52,6 +53,24 @@ const seedLearningData = catchAsync(async (req, res) => {
   res.status(httpStatus.OK).send(course);
 });
 
+const seedModuleData = catchAsync(async (req, res) => {
+  try {
+    const data = await courseService.seedModuleData(req.body);
+    res.status(httpStatus.OK).send(data);
+  } catch (e) {
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, e);
+  }
+});
+
+const seedQuestionData = catchAsync(async (req, res) => {
+  try {
+    const data = await courseService.seedQuestionData(req.body);
+    res.status(httpStatus.OK).send(data);
+  } catch (e) {
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, e);
+  }
+});
+
 module.exports = {
   getCourse,
   updateModuleProgress,
@@ -63,4 +82,6 @@ module.exports = {
 	seedLearningData,
   updateCourseInfo,
 	getCourseTransactions,
+  seedModuleData,
+  seedQuestionData,
 };

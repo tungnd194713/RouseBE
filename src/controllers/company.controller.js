@@ -58,6 +58,11 @@ const getJobs = catchAsync(async (req, res) => {
   res.status(httpStatus.OK).send(jobs);
 });
 
+const changeJobStatus = catchAsync(async (req, res) => {
+  const jobs = await companyService.changeJobStatus(req.user._id, req.params.id, req.body.status);
+  res.status(httpStatus.OK).send(jobs);
+});
+
 const getJobById = catchAsync(async (req, res) => {
   const job = await companyService.getJobById(req.params.id);
   res.status(httpStatus.OK).send(job);
@@ -136,6 +141,11 @@ const openJobEducation = catchAsync(async (req, res) => {
   res.status(httpStatus.OK).send(data);
 });
 
+const closeJobEducation = catchAsync(async (req, res) => {
+  const data = await companyService.closeJobEducation(req.params.id, req.user._id);
+  res.status(httpStatus.OK).send(data);
+});
+
 const sendChangeRequest = catchAsync(async (req, res) => {
   const data = await companyService.sendChangeRequest(req.params.id, req.user._id, req.body);
   res.status(httpStatus.OK).send(data);
@@ -195,6 +205,24 @@ const requestEducationForJob = catchAsync(async (req, res) => {
   }
 });
 
+const getCourseUnlockHistory = catchAsync(async (req, res) => {
+  try {
+    const data = await companyService.getCourseUnlockHistory(req.user._id, req.body, req.query);
+    res.status(httpStatus.OK).send(data);
+  } catch (e) {
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, e);
+  }
+});
+
+const payCourse = catchAsync(async (req, res) => {
+  try {
+    const data = await companyService.payCourse(req.user._id, req.params.transactionId);
+    res.status(httpStatus.OK).send(data);
+  } catch (e) {
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, e);
+  }
+});
+
 module.exports = {
 	getCompanyJobs,
 	me,
@@ -215,6 +243,7 @@ module.exports = {
   getCVMatchingPoint,
   toggleJobEducation,
 	openJobEducation,
+  closeJobEducation,
   sendChangeRequest,
   candidateUpdate,
   getEducationList,
@@ -224,4 +253,7 @@ module.exports = {
   getProgressStatistic,
 	getAllJobs,
 	requestEducationForJob,
+  changeJobStatus,
+  getCourseUnlockHistory,
+  payCourse,
 }

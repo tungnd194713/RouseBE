@@ -34,7 +34,10 @@ const courseTransactionSchema = mongoose.Schema(
 		scholarship_paid: {
 			type: Boolean,
 			default: true,
-		}
+		},
+    scholarship_paid_at: {
+      type: Date,
+    }
   },
   {
     timestamps: true,

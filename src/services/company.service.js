@@ -1,4 +1,4 @@
-const { Company, Job, CandidateApply, Subject, College, Certificate, Course, Major, CertificateSubjects, CollegeSubjects, JobEducation, UserProfile, User, UserRoadMap, ModuleProgressLog, AnswerSheet, Test } = require('../models');
+const { Company, Job, CandidateApply, Subject, College, Certificate, Course, Major, CertificateSubjects, CollegeSubjects, JobEducation, UserProfile, User, UserRoadMap, ModuleProgressLog, AnswerSheet, Test, Module, CourseTransaction } = require('../models');
 const JobRequirement = require('../models/jobRequirement.model');
 const ApiError = require('../utils/ApiError');
 const httpStatus = require('http-status');
@@ -73,6 +73,13 @@ const getCompanyJobs = async () => {
 	// Insert companies data into the database
 	return Company.insertMany(companiesData);
 }
+
+const createCompany = async (userBody) => {
+  if (await Company.isEmailTaken(userBody.email)) {
+    throw new ApiError(httpStatus.BAD_REQUEST, 'Email already taken');
+  }
+  return Company.create(userBody);
+};
 
 const getAllJobs = async (userId) => {
 	const jobEducation = await JobEducation.find({ company: userId });
@@ -382,6 +389,15 @@ const getJobById = async (id) => {
 	}
 }
 
+const changeJobStatus = async (userId, jobId, status) => {
+  const job = await Job.findOne({ _id: jobId, company_id: userId });
+  if (!job) throw new ApiError(httpStatus.NOT_FOUND, 'Job not found!');
+
+  job.status = status;
+  await job.save();
+  return 'Status changed!';
+}
+
 const deleteJob = async (job_id) => {
   const hasCandidateApply = await CandidateApply.countDocuments({job_id});
   if (hasCandidateApply && hasCandidateApply > 0) {
@@ -504,7 +520,7 @@ const getUserRoadmapProgress = (userRoadmap) => {
   let totalModules = 0;
   userRoadmap.roadmap_milestone.forEach((milestone) => {
     totalModules += milestone.course.modules.length;
-    totalDoneModule += milestone.done_modules.length;
+    totalDoneModule += milestone.is_finished ? milestone.course.modules.length : milestone.done_modules.length;
   })
 
   return totalDoneModule / totalModules * 100;
@@ -525,6 +541,13 @@ const getCandidateEducationProgress = async (candidateApplyId, companyId) => {
       path: 'modules',
       model: 'Module',
     },
+  })
+  .populate({
+    path: 'roadmap_milestone.course',
+    populate: {
+      path: 'tests',
+      model: 'Test',
+    },
   });
   if (!userRoadmap) {
     throw new ApiError(httpStatus.NOT_FOUND, 'Roadmap not found');
@@ -538,11 +561,40 @@ const getCandidateEducationProgress = async (candidateApplyId, companyId) => {
     throw new ApiError(httpStatus.NOT_FOUND, 'Job education not found');
   }
   const roadmapProgress = getUserRoadmapProgress(userRoadmap);
+  const courses = userRoadmap.roadmap_milestone.map((item) => item.course);
+  const testIds = courses.map((item) => item.tests).flat();
+  const answersheets = await AnswerSheet.find({ testId: { $in: testIds }, user: user.id })
+
+  const roadmapData = userRoadmap.roadmap_milestone.toObject().map((item) => {
+    const testResults = [];
+    item.course.tests?.forEach((test) => {
+      const answerSheet = answersheets.find((sheet) => sheet.testId.toString() === test._id.toString());
+      if (answerSheet) {
+        testResults.push({
+          answerSheet,
+          test,
+          isFinished: answerSheet.isFinished,
+        })
+      } else {
+        testResults.push({
+          test,
+          isFinished: false,
+        })
+      }
+    })
+    return {
+      ...item,
+      tests: testResults,
+    }
+  })
   return {
-    userRoadmap: userRoadmap.toObject(),
+    userRoadmap: {
+      ...userRoadmap.toObject(),
+      roadmap_milestone: roadmapData,
+    },
     job: job.toObject(),
     jobEducation: jobEducation.toObject(),
-    roadmapProgress,
+    roadmapProgress: Math.round(roadmapProgress),
     user: user.toObject(),
   }
 }
@@ -876,7 +928,7 @@ function getIndexOfMax(numbers) {
 const getCVMatchingPoint = async (candidateId, companyId) => {
   const candidateApply = await CandidateApply.findOne({ _id: candidateId, company: companyId });
 
-  if (!candidateApply || !candidateApply.education_applied) throw new ApiError(httpStatus.NOT_FOUND, 'CV not found');
+  if (!candidateApply) throw new ApiError(httpStatus.NOT_FOUND, 'CV not found');
 
   const userProfile = await UserProfile.findOne({user: candidateApply.user});
   let userSubjects = userProfile.skills;
@@ -1112,6 +1164,22 @@ const openJobEducation = async (jobId, companyId) => {
 	await jobEducation.save();
 
   return 'Education updated';
+}
+
+const closeJobEducation = async (jobId, companyId) => {
+	const job = await Job.findOne({ _id: jobId, company_id: companyId });
+
+  if (!job) throw new ApiError(httpStatus.NOT_FOUND, 'Job not found');
+
+  const jobEducation = await JobEducation.findOne({ job: jobId }).populate('courses');
+  if (!jobEducation) throw new ApiError(httpStatus.NOT_FOUND, 'Education not found');
+
+	if (jobEducation.status === 3) {
+    jobEducation.status = 5;
+	  await jobEducation.save();
+  }
+
+  return 'Education closed';
 }
 
 const toggleJobEducation = async (jobId, companyId) => {
@@ -1523,7 +1591,7 @@ const getProgressStatistic = async (candidateApplyId, companyId) => {
     // Get test results
     const testResults = milestone.done_tests.map(testId => {
       const answerSheet = answerSheets.find(sheet => sheet.testId.toString() === testId.toString() && sheet.isFinished);
-      return answerSheet ? answerSheet.mark : 0;
+      return answerSheet ? answerSheet?.mark : 0;
     });
 
     const tests = course?.tests?.map((test) => {
@@ -1532,9 +1600,9 @@ const getProgressStatistic = async (candidateApplyId, companyId) => {
         id: test.id || test._id,
         name: test.name,
         is_finished: answerSheet ? true : false,
-        finished_at: answerSheet.finishedAt ? answerSheet.finishedAt.toISOString().split('T')[0] : null,
+        finished_at: answerSheet?.finishedAt ? answerSheet.finishedAt.toISOString().split('T')[0] : null,
         max_mark: test.questions.length,
-        mark: answerSheet.mark || 0,
+        mark: answerSheet?.mark || 0,
       };
     })
 
@@ -1585,7 +1653,67 @@ const createNewEducationRequest = async (companyId, body) => {
   return JobEducation.create(body);
 }
 
+const getCourseUnlockHistory = async (company, params, options = {}) => {
+  const jobEducation = await JobEducation.find({ company });
+  const jobEducationIds = jobEducation.map((item) => item.id || item._id);
+	const filter = {
+    jobEducation: { $in: jobEducationIds },
+  }
+  const queryOptions = {
+		...options,
+    populate: 'user course jobEducation.job',
+    sortBy: 'scholarship_paid:asc,createdAt',
+	}
+	// if (params && params.key_word) {
+	// 	const jobs = await Job.find({title: { "$regex": params.key_word, "$options": "i" }});
+	// 	const jobIds = jobs.map((item) => item._id || item.id);
+	// 	filter.job = { $in: jobIds };
+	// }
+  if (params && params.scholarship_paid) {
+    filter.scholarship_paid = params.scholarship_paid;
+  }
+	const courseTransactionList = await CourseTransaction.paginate(filter, queryOptions);
+  courseTransactionList.results = courseTransactionList.results.map((item) => {
+    return {
+      id: item.id,
+			userName: item.user?.name,
+			courseName: item.course?.title,
+			position: item.jobEducation?.job?.title,
+			scholarship: item.scholarship,
+			scholarship_paid: item.scholarship_paid,
+			course_point: item.course_point,
+			course_cost: Math.round(item.course_point * item.scholarship / 100),
+			unlocked_at: item.createdAt || new Date(Date.now()),
+    }
+  })
+  return courseTransactionList;
+}
+
+const payCourse = async (companyId, transactionId) => {
+  const company = await Company.findById(companyId);
+  const transaction = await CourseTransaction.findById(transactionId);
+  if (!transaction) throw new ApiError(httpStatus.NOT_FOUND, 'Transaction not found');
+
+  if (!transaction.scholarship_paid) {
+    const cost = transaction.course_point * transaction.scholarship / 100;
+    if (company.point_owned >= cost) {
+      company.point_owned -= cost;
+      await company.save();
+      transaction.scholarship_paid = true;
+      transaction.scholarship_paid_at = Date.now();
+      await transaction.save();
+
+      return 'Scholarship paid'
+    } else {
+      throw new ApiError(httpStatus.NOT_FOUND, 'Insufficient point');
+    }
+  } else {
+    throw new ApiError(httpStatus.NOT_FOUND, 'Transaction paid');
+  }
+}
+
 module.exports = {
+  createCompany,
 	getCompanyByEmail,
 	getCompanyJobs,
 	getCompanyById,
@@ -1606,6 +1734,7 @@ module.exports = {
   getCVMatchingPoint,
   toggleJobEducation,
 	openJobEducation,
+  closeJobEducation,
   sendChangeRequest,
   candidateUpdate,
   getEducationList,
@@ -1615,4 +1744,7 @@ module.exports = {
   getProgressStatistic,
 	getAllJobs,
 	requestEducationForJob,
+  changeJobStatus,
+  getCourseUnlockHistory,
+  payCourse,
 }

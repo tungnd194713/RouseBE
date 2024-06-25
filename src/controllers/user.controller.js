@@ -2,11 +2,14 @@ const httpStatus = require('http-status');
 const pick = require('../utils/pick');
 const ApiError = require('../utils/ApiError');
 const catchAsync = require('../utils/catchAsync');
-const { userService, companyService, roadmapService } = require('../services');
+const { userService, companyService, roadmapService, instructorService } = require('../services');
 const { UserRoadMap, Course } = require('../models');
 
 const createUser = catchAsync(async (req, res) => {
   const user = await userService.createUser(req.body);
+  if (req.body.role === 'instructor') {
+    await instructorService.addInstructor(user);
+  }
   res.status(httpStatus.CREATED).send(user);
 });
 
@@ -78,7 +81,7 @@ const findJob = catchAsync(async (req, res) => {
 });
 
 const suggestJobs = catchAsync(async (req, res) => {
-  const data = await userService.suggestJobs(req.user._id, req.body);
+  const data = await userService.suggestJobs(req.user?._id, req.body);
   res.status(httpStatus.OK).send(data);
 });
 
@@ -123,7 +126,7 @@ const getUserModule = catchAsync(async (req, res) => {
 
 const watchedModule = catchAsync(async (req, res) => {
   try {
-    const data = await userService.watchedModule(req.user._id, req.user.params.roadmapId, req.params.courseId, req.params.moduleId);
+    const data = await userService.watchedModule(req.user._id, req.params.roadmapId, req.params.courseId, req.params.moduleId);
     res.status(httpStatus.OK).send(data);
   } catch (e) {
     throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, e);
@@ -159,7 +162,7 @@ const addMentorRating = catchAsync(async (req, res) => {
 
 const getTestById = catchAsync(async (req, res) => {
   try {
-    const userRoadmap = await UserRoadMap.findOne({ user: req.user._id, is_finished: false });
+    const userRoadmap = await UserRoadMap.findById(req.params.roadmapId);
 
     if (!userRoadmap) {
       throw new ApiError(httpStatus.NOT_FOUND, 'Roadmap not found');
@@ -168,7 +171,7 @@ const getTestById = catchAsync(async (req, res) => {
     const roadmapCourse = userRoadmap.roadmap_milestone?.find((item) => item.course.toString() === req.params.courseId.toString());
 
     if (!roadmapCourse || !roadmapCourse.is_unlocked) {
-      throw new ApiError(httpStatus.NOT_FOUND, 'Course not found');
+      throw new ApiError(httpStatus.NOT_FOUND, 'Roadmap course not found');
     }
 
     const course = await Course.findById(req.params.courseId);
@@ -181,9 +184,11 @@ const getTestById = catchAsync(async (req, res) => {
     data.test = test;
     data.userRoadmap = userRoadmap;
     data.course = course;
-    data.answerSheet = answerSheet;
-    if (answerSheet.isFinished) {
-      data.testKey = await userService.getTestKey(answerSheet.testId);
+    if (answerSheet) {
+      data.answerSheet = answerSheet;
+      if (answerSheet.isFinished) {
+        data.testKey = await userService.getTestKey(answerSheet.testId);
+      }
     }
     res.status(httpStatus.OK).send(data);
   } catch (e) {

@@ -80,7 +80,7 @@ const userRoadmapSchema = mongoose.Schema(
 					default: false,
 				},
         started_at: {
-          type: Boolean,
+          type: Date,
         }
       },
     ],

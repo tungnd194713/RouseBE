@@ -610,7 +610,8 @@ const suggestJobs = async (userId, params) => {
   const educations = await JobEducation.find({job: { $in: jobIds }});
 
   availableJobs = availableJobs.map((job) => {
-		const education = educations.find(edu => edu.job.toString() == job._id.toString());
+		const education = educations.find(edu => edu.job.toString() === job._id.toString());
+    console.log(education)
     const jobRequirements = requirements.filter((item) => item.job.toString() === job._id.toString());
     const previewSkills = requirements.filter(item => item.type === 'Skill').map(obj => obj.skills).slice(0, 3);
 
@@ -619,8 +620,9 @@ const suggestJobs = async (userId, params) => {
       ...job.toObject(),
 			date_start: job.date_start ? formatDate(job.date_start) : null,
 			date_end: job.date_start ? addMonthsToDate(job.date_start, job.display_month) : null,
-			max_education_month: education ? education.max_education_month : null,
-			scholarship: education ? education.scholarship : null,
+      educationReady: (education && education.status === 3) ? true : false,
+			max_education_month: (education && education.status === 3) ? education.max_education_month : null,
+			scholarship: (education && education.status === 3) ? education.scholarship : null,
 			id: job._id,
 			requirements: jobRequirements,
       need_to_learn: removeDuplicates(suggestResult.needToLearnSkill.flat()),
@@ -683,82 +685,8 @@ const getDetailJob = async (userId, jobId) => {
                                           }
                                         })
 	userSubjects = removeDuplicates(userSubjects.concat(userCertificateSubjects, userMajorSubjects));
-	const job = await Job.findById(jobId);
-  const education = await JobEducation.findOne({job: jobId })
-  .populate({
-    path: 'courses',
-    populate: {
-      path: 'modules',
-      model: 'Module',
-    },
-  })
-  .populate({
-    path: 'courses',
-    populate: {
-      path: 'tests',
-      populate: {
-        path: 'questions',
-        model: 'Question'
-      },
-    },
-  });
+	const job = await Job.findById(jobId).populate('company_id');
 	const jobRequirements = await JobRequirement.find({ job: jobId }).populate('skills certificates majors colleges');
-
-	const suggestResult = suggestLogic(jobRequirements, userSubjects, certificateIds, majorIds, certificateObjects, majorObjects);
-	const needToLearn = removeDuplicates(suggestResult.needToLearnSkill.flat());
-	const needToLearnSkills = await Subject.find({_id: {$in: needToLearn.map(item => item.skill)}})
-	const matchedLearning = needToLearnSkills.map(item1 => {
-    const matchingItem = needToLearn.find(item2 => item2.skill.toString() === item1.id.toString());
-    return {
-        name: item1.name,
-        ...matchingItem
-    };
-	});
-
-  let userRoadmaps = await UserRoadMap.find({ user: userId });
-  const doneCourses = userRoadmaps.map((roadmap) => roadmap.done_courses.map((course) => course.toString())).flat();
-
-	const roadmapCourses = education.courses.map((course) => {
-    const timeCost = course.modules.reduce((acc, module) => acc + module.estimated_time, 0);
-    const item = matchedLearning.find((tag) => tag.skill.toString() === course.skill_tags[0].skill.toString() && tag.level === course.skill_tags[0].level);
-    const courseLearned = false;
-    if (doneCourses.includes(course.id.toString()) || doneCourses.includes(course._id.toString())) {
-      courseLearned = true;
-    }
-
-    return {
-      ...course.toObject(),
-      id: course._id || course.id,
-      _id: course._id || course.id,
-      timeCost,
-      tag: {
-        name: item,
-      },
-      courseLearned,
-    }
-  });
-
-	const needToLearnCourses = [];
-	matchedLearning.forEach((item) => {
-		const foundCourse = roadmapCourses.find((course) => {
-			const foundTag = course.skill_tags.find((tag) => tag.skill.toString() === item.skill.toString() && tag.level === item.level);
-			if (foundTag) {
-				return true;
-			} else {
-				return false;
-			}
-		})
-		if (foundCourse) {
-			const timeCost = foundCourse.modules.reduce((acc, module) => acc + module.estimated_time, 0);
-			needToLearnCourses.push({
-				...foundCourse,
-        _id: foundCourse.id || foundCourse._id,
-        id: foundCourse.id || foundCourse._id,
-				timeCost,
-				tag: item,
-			})
-		}
-	})
   const beginnerSkills = jobRequirements.filter(item => item.type === 'Skill' && item.level === 'Beginner').map(obj => obj.skills);
   const intermediateSkills = jobRequirements.filter(item => item.type === 'Skill' && item.level === 'Intermediate').map(obj => obj.skills);
   const advancedSkills = jobRequirements.filter(item => item.type === 'Skill' && item.level === 'Advanced').map(obj => obj.skills);
@@ -771,6 +699,16 @@ const getDetailJob = async (userId, jobId) => {
   });
   const previewSkills = jobRequirements.filter(item => item.type === 'Skill').map(obj => obj.skills).slice(0, 3).flat().map(item => item.name);
 
+	const suggestResult = suggestLogic(jobRequirements, userSubjects, certificateIds, majorIds, certificateObjects, majorObjects);
+	const needToLearn = removeDuplicates(suggestResult.needToLearnSkill.flat());
+	const needToLearnSkills = await Subject.find({_id: {$in: needToLearn.map(item => item.skill)}})
+	const matchedLearning = needToLearnSkills.map(item1 => {
+    const matchingItem = needToLearn.find(item2 => item2.skill.toString() === item1.id.toString());
+    return {
+        name: item1.name,
+        ...matchingItem
+    };
+	});
   const jobMatchingData = suggestResult.jobMatchingData;
 
   let jobMatchingDataFinal = [];
@@ -834,7 +772,7 @@ const getDetailJob = async (userId, jobId) => {
       doc.userProfile.forEach(profile => {
           switch (profile.type) {
               case 'Certificate':
-                  const certificateData = certificatesMap.get(profile.id).toString();
+                  const certificateData = certificatesMap.get(profile.id.toString());
                   newDoc.userProfile.push({
                     ...profile,
                     name: certificateData ? certificateData.name : '',
@@ -876,12 +814,94 @@ const getDetailJob = async (userId, jobId) => {
 
   const isApplied = await CandidateApply.findOne({ job: jobId, user: userId });
 
+  const education = await JobEducation.findOne({job: jobId })
+  .populate({
+    path: 'courses',
+    populate: {
+      path: 'modules',
+      model: 'Module',
+    },
+  })
+  .populate({
+    path: 'courses',
+    populate: {
+      path: 'tests',
+      populate: {
+        path: 'questions',
+        model: 'Question'
+      },
+    },
+  });
+  if (!education || education.status !== 3) {
+    return {
+      ...job.toObject(),
+      date_start: job.date_start ? formatDate(job.date_start) : null,
+      date_end: job.date_start ? addMonthsToDate(job.date_start, job.display_month) : null,
+      id: job._id,
+      need_to_learn: matchedLearning,
+      job_point: userProfile ? suggestResult.jobPoint : null,
+      user_job_point: userProfile ? suggestResult.userJobPoint : null,
+      job_matching_data: jobMatchingDataFinal,
+      beginnerSkills,
+      intermediateSkills,
+      advancedSkills,
+      certificates,
+      majorColleges,
+      previewSkills,
+      isApplied: isApplied ? true : false,
+      educationReady: false,
+      company: job.company_id,
+    }
+  }
+  let userRoadmaps = await UserRoadMap.find({ user: userId });
+  const doneCourses = userRoadmaps.map((roadmap) => roadmap.done_courses.map((course) => course.toString())).flat();
+
+	const roadmapCourses = education.courses.map((course) => {
+    const timeCost = course.modules.reduce((acc, module) => acc + module.estimated_time, 0);
+    const item = matchedLearning.find((tag) => tag.skill.toString() === course.skill_tags[0].skill.toString() && tag.level === course.skill_tags[0].level);
+    let courseLearned = false;
+    if (doneCourses.includes(course.id.toString()) || doneCourses.includes(course._id.toString())) {
+      courseLearned = true;
+    }
+
+    return {
+      ...course.toObject(),
+      id: course._id || course.id,
+      _id: course._id || course.id,
+      timeCost,
+      tag: {
+        name: item,
+      },
+      courseLearned,
+    }
+  });
+
+	const needToLearnCourses = [];
+	matchedLearning.forEach((item) => {
+		const foundCourse = roadmapCourses.find((course) => {
+			const foundTag = course.skill_tags.find((tag) => tag.skill.toString() === item.skill.toString() && tag.level === item.level);
+			if (foundTag) {
+				return true;
+			} else {
+				return false;
+			}
+		})
+		if (foundCourse) {
+			const timeCost = foundCourse.modules.reduce((acc, module) => acc + module.estimated_time, 0);
+			needToLearnCourses.push({
+				...foundCourse,
+        _id: foundCourse.id || foundCourse._id,
+        id: foundCourse.id || foundCourse._id,
+				timeCost,
+				tag: item,
+			})
+		}
+	})
+
 	return {
 		...job.toObject(),
 		date_start: job.date_start ? formatDate(job.date_start) : null,
 		date_end: job.date_start ? addMonthsToDate(job.date_start, job.display_month) : null,
-		max_education_month: education ? education.max_education_month : null,
-		scholarship: education ? education.scholarship : null,
 		id: job._id,
 		need_to_learn: matchedLearning,
 		job_point: userProfile ? suggestResult.jobPoint : null,
@@ -893,9 +913,13 @@ const getDetailJob = async (userId, jobId) => {
     certificates,
     majorColleges,
     previewSkills,
-		needToLearnCourses: roadmapCourses?.filter((item) => !item.courseLearned) || [],
-    roadmapCourses,
     isApplied: isApplied ? true : false,
+    educationReady: true,
+    max_education_month: education ? education.max_education_month : null,
+		scholarship: education ? education.scholarship : null,
+    needToLearnCourses: roadmapCourses?.filter((item) => !item.courseLearned) || [],
+    roadmapCourses,
+    company: job.company_id,
 	}
 }
 
@@ -948,16 +972,17 @@ const startJobEducation = async (userId, candidateApplyId) => {
     throw new ApiError(httpStatus.NOT_FOUND, 'Unable to start education');
   }
 	if (candidateApply.status === 3) {
-    const jobEducation = JobEducation.findOne({ job: candidateApply.job });
+    const jobEducation = await JobEducation.findOne({ job: candidateApply.job });
     if (!jobEducation) throw new ApiError(httpStatus.NOT_FOUND, 'Education not found');
 
-    const currentCourse = await Course.findById(candidateApply.education_courses[0]);
+    // const currentCourse = await Course.findById(candidateApply.education_courses[0]);
     const userRoadmap = {
       title:'Lộ trình học cho vị trí ' + candidateApply.job.title,
       user: userId,
       job: candidateApply.job.id,
-      current_course: candidateApply.education_courses[0],
-      current_module: currentCourse?.modules[0],
+      jobEducation: jobEducation.id || jobEducation._id,
+      // current_course: candidateApply.education_courses[0],
+      // current_module: currentCourse?.modules[0],
       scholarship: jobEducation.scholarship || 0,
       roadmap_milestone: candidateApply.education_courses.map((item) => {
         return {
@@ -977,7 +1002,7 @@ const startJobEducation = async (userId, candidateApplyId) => {
     }
     candidateApply.status = 4;
     await candidateApply.save()
-    return 'Education started';
+    return createdRoadmap.id || createdRoadmap._id;
   } else {
     throw new ApiError(httpStatus.NOT_FOUND, 'Unable to start education');
   }
@@ -1069,7 +1094,7 @@ const getCurrentEducation = async (userId) => {
         testResults.push({
           answerSheet,
           test,
-          isFinished: true,
+          isFinished: answerSheet.isFinished,
         })
       } else {
         testResults.push({
@@ -1277,6 +1302,8 @@ const unlockRoadmapCourse = async (userId, roadmapId, courseId, body) => {
 			await transaction.save();
 		} else {
 			company.point_owned -= scholarship_cost;
+      transaction.scholarship_paid_at = Date.now();
+			await transaction.save();
 		}
 		await company.save();
 	} else {
@@ -1500,7 +1527,7 @@ const submitAnswerSheet = async (userId, roadmapId, courseId, answerSheetId, bod
 			if (!userRoadmap.done_courses) {
 				userRoadmap.done_courses = [courseId];
 			} else {
-				userRoadmap.done_course.push(courseId);
+				userRoadmap.done_courses.push(courseId);
 			}
       await userRoadmap.save();
     }
@@ -1549,16 +1576,18 @@ const getUserRoadmapList = async (userId) => {
   const result = userRoadmaps.map((roadmap) => {
     const courseModules = [];
     let progress = 0;
+    let max = 0;
     roadmap.roadmap_milestone.forEach(milestone => {
       if (milestone.course && milestone.course.modules) {
         const stringModules = milestone.course.modules.map((item) => item.toString());
         courseModules.push(...stringModules);
       }
       if (milestone.is_finished) {
-        progress += 1 / roadmap.roadmap_milestone.length;
+        progress += (milestone.course?.modules?.length || 0 + milestone.course?.test?.length || 1);
       } else {
-        progress += (milestone.done_modules?.length || 0 + milestone.done_tests?.length || 0) / (milestone.course?.modules?.length || 0 + milestone.course?.test?.length || 1);
+        progress += (milestone.done_modules?.length || 0 + milestone.done_tests?.length || 0);
       }
+      max += (milestone.course?.modules?.length || 0 + milestone.course?.test?.length || 1);
     });
     const latestModuleLog = moduleProgressLogs.filter((log) => courseModules.includes(log.module.id.toString()))
                                                .reduce((latestLog, currentLog) => {
@@ -1566,7 +1595,7 @@ const getUserRoadmapList = async (userId) => {
                                                 }, {createdAt: "1990-06-15T08:59:05.000Z"});
     return {
       ...roadmap.toObject(),
-      currentLearning: {
+      currentLearning: (latestModuleLog.module?.id && latestModuleLog.course?.id) ? {
         module: {
           id: latestModuleLog.module?.id,
           name: latestModuleLog.module?.name
@@ -1575,8 +1604,8 @@ const getUserRoadmapList = async (userId) => {
           id: latestModuleLog.course?.id,
           name: latestModuleLog.course?.title
         },
-      },
-      overallProgress: Math.round(progress * 100),
+      } : null,
+      overallProgress: Math.round(progress / max * 100),
     }
   })
 
@@ -1653,7 +1682,7 @@ const getRoadmapDetail = async (userId, roadmapId) => {
         testResults.push({
           answerSheet,
           test,
-          isFinished: true,
+          isFinished: answerSheet.isFinished,
         })
       } else {
         testResults.push({

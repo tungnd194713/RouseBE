@@ -38,7 +38,7 @@ router.post('/profile/update-info-basic', upload.none(), auth(), userController.
 router.post('/profile/update-info-advanced', upload.none(), auth(), userController.updateUserProfile);
 router.get('/jobs/:jobId/matching-point', auth(), userController.getJobMatchingPoint);
 router.post('/jobs/find', auth(), userController.findJob);
-router.post('/jobs/suggest', auth(), userController.suggestJobs);
+router.post('/jobs/suggest', userController.suggestJobs);
 router.get('/jobs/:jobId', auth(), userController.getDetailJob);
 router.post('/candidate-applies/', upload.none(), auth(), userController.applyJob);
 router.post('/candidate-applies/:candidateApplyId/start-education', auth(), userController.startJobEducation);
@@ -53,7 +53,7 @@ router.get('/educations/:roadmapId/courses/:courseId/modules/:moduleId', auth(),
 router.get('/educations/:roadmapId/courses/:courseId/modules/:moduleId/watched', auth(), userController.watchedModule);
 router.post('/jobs/list/applied', auth(), userController.getAppliedJobs);
 router.get('/educations/courses/:courseId/tests/:testId/sheets', auth(), userController.getUserAnswerSheet);
-router.get('/educations/courses/:courseId/tests/:testId/', auth(), userController.getTestById);
+router.get('/educations/:roadmapId/courses/:courseId/tests/:testId/', auth(), userController.getTestById);
 router.post('/educations/tests/:testId/sheets/create', auth(), userController.createAnswerSheet);
 router.put('/educations/sheets/:answerSheetId', auth(), userController.updateAnswerSheetById);
 router.get('/educations/sheets/:answerSheetId', auth(), userController.getAnswerSheetById);

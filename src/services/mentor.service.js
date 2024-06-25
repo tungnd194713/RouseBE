@@ -305,7 +305,8 @@ const getMentors = async (params, options) => {
       totalWorkHours: totalHours,
 			name: mentor.user.name,
 			shift_count: mentor.shifts.length,
-			email: mentor.user.email
+			email: mentor.user.email,
+      status: mentor.user.status
     };
   });
 	return mentors;
