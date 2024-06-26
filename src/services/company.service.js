@@ -212,6 +212,7 @@ const updateJobById = async (jobId, body) => {
       await jobEducation.remove();
     } else {
       jobEducation.max_education_month = body.max_education_month;
+      jobEducation.custom_requirement = body.custom_requirement;
       // jobEducation.scholarship = body.scholarship (Can not change if paid)
       // jobEducation.number_trainings = body.number_trainings (Can not change if paid)
       await jobEducation.save()

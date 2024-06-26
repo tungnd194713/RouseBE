@@ -4,7 +4,7 @@ const catchAsync = require('../utils/catchAsync');
 const ApiError = require('../utils/ApiError');
 
 const getCourse = catchAsync(async (req, res) => {
-  const courses = await courseService.getCourse(req.params.module_id, req.user._id);
+  const courses = await courseService.getCourse(req.params.courseId);
   res.status(httpStatus.OK).send(courses);
 });
 

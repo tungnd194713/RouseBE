@@ -1,7 +1,7 @@
 /* eslint-disable camelcase */
 const httpStatus = require('http-status');
 const ApiError = require('../utils/ApiError');
-const { Discussion, DiscussionReply, Note, ModuleTest, ModuleTestSubmission, ModuleProgress, Module, ModuleProgressLog, Course } = require('../models');
+const { Discussion, DiscussionReply, Note, ModuleTest, ModuleTestSubmission, ModuleProgress, Module, ModuleProgressLog, Course, JobEducation } = require('../models');
 const RoadMap = require('../models/roadmap.model');
 const { parseDateRange } = require('../helpers/roadmap.helper');
 
@@ -21,6 +21,73 @@ const updateModuleLog = async (userId, body) => {
     await moduleLog.save()
     return moduleLog;
   }
+}
+
+const getCourseModule = async (courseId, moduleId) => {
+  const course = await Course.findById(courseId);
+
+	if (!course) throw new ApiError(httpStatus.NOT_FOUND, 'Course not found');
+
+	const createdModule = await Module.findById(moduleId);
+	if (!createdModule) throw new ApiError(httpStatus.NOT_FOUND, 'Module not found');
+
+  const educationWithCourse = await JobEducation.find({ courses: courseId, status: 3 });
+
+	return {
+    course: {
+      ...course.toObject(),
+      canEdit: educationWithCourse && educationWithCourse.length ? false : true,
+    },
+    module: createdModule.toObject(),
+  };
+}
+
+const createCourseModule = async (courseId, body) => {
+  const course = await Course.findById(courseId);
+
+	if (!course) throw new ApiError(httpStatus.NOT_FOUND, 'Course not found');
+
+  const createdModule = await Module.create(body)
+
+  await Course.updateOne(
+    { _id: courseId },
+    { $push: { modules: createdModule.id || createdModule._id } },
+  );
+
+	return createdModule;
+}
+
+const updateCourseModule = async (courseId, moduleId, body) => {
+  const course = await Course.findById(courseId);
+
+	if (!course) throw new ApiError(httpStatus.NOT_FOUND, 'Course not found');
+
+	const module = await Module.findById(moduleId);
+	if (!module) throw new ApiError(httpStatus.NOT_FOUND, 'Module not found');
+
+  module.name = body.name;
+  module.description = body.description;
+  module.video = body.video;
+  module.video_duration = body.video_duration;
+  module.check_point_quizzes = body.check_point_quizzes;
+  await module.save();
+
+  return 'Save success';
+}
+
+const removeCourseModule = async (courseId, moduleId) => {
+  const course = await Course.findById(courseId);
+
+	if (!course) throw new ApiError(httpStatus.NOT_FOUND, 'Course not found');
+
+	const deletedModule = await Module.findByIdAndDelete(moduleId);
+
+  await Course.updateOne(
+    { _id: courseId },
+    { $pull: { modules: deletedModule.id || deletedModule._id } },
+  );
+
+  return deletedModule;
 }
 
 const getModuleLog = async (userId, params) => {
@@ -229,6 +296,9 @@ const seedData = async () => {
 };
 
 module.exports = {
+  getCourseModule,
+  createCourseModule,
+  updateCourseModule,
   getNotes,
   takeNote,
   editNote,
@@ -240,4 +310,5 @@ module.exports = {
   submitExam,
   seedData,
   updateModuleLog,
+  removeCourseModule,
 };

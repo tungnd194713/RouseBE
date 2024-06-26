@@ -1,6 +1,6 @@
 // const httpStatus = require('http-status');
 const mongoose = require('mongoose');
-const { ModuleProgress, User, Module, Course, Subject, CourseTransaction, Test, Question } = require('../models');
+const { ModuleProgress, User, Module, Course, Subject, CourseTransaction, Test, Question, JobEducation } = require('../models');
 const ApiError = require('../utils/ApiError');
 
 const { OpenAI} = require('openai');
@@ -9,21 +9,16 @@ const httpStatus = require('http-status');
 const openai = new OpenAI();
 
 // eslint-disable-next-line camelcase
-const getCourse = async (_id, user_id) => {
-  const courses = await Module.findOne({ _id });
-  let moduleProgress = await ModuleProgress.findOne({ module_id: _id, user_id }).select('-_id');
-  if (!moduleProgress) {
-    moduleProgress = await ModuleProgress.create({
-      video_played_time: 0,
-      module_id: _id,
-      progress: 0,
-      user_id,
-    });
-  }
+const getCourse = async (courseId) => {
+  const course = await Course.findById(courseId).populate('modules skill_tags.skill tests');
+
+  if (!course) throw new ApiError(httpStatus.NOT_FOUND, 'Course not found');
+
+  const educationWithCourse = await JobEducation.find({ courses: courseId, status: 3 });
   return {
-    ...courses.toObject(),
-    ...moduleProgress.toObject(),
-  };
+		...course.toObject(),
+    canEdit: educationWithCourse && educationWithCourse.length ? false : true,
+	};
 };
 
 const getUserCourse = async (userId) => {

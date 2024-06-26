@@ -8,6 +8,26 @@ const updateModuleLog = catchAsync(async (req, res) => {
   res.status(httpStatus.OK).send(data);
 });
 
+const getCourseModule = catchAsync(async (req, res) => {
+  const data = await moduleService.getCourseModule(req.params.courseId, req.params.moduleId);
+  res.status(httpStatus.OK).send(data);
+});
+
+const createCourseModule = catchAsync(async (req, res) => {
+  const data = await moduleService.createCourseModule(req.params.courseId, req.body);
+  res.status(httpStatus.OK).send(data);
+});
+
+const removeCourseModule = catchAsync(async (req, res) => {
+  const data = await moduleService.removeCourseModule(req.params.courseId, req.params.moduleId);
+  res.status(httpStatus.OK).send(data);
+});
+
+const updateCourseModule = catchAsync(async (req, res) => {
+  const data = await moduleService.updateCourseModule(req.params.courseId, req.params.moduleId, req.body);
+  res.status(httpStatus.OK).send(data);
+});
+
 const getNotes = catchAsync(async (req, res) => {
   const note = await moduleService.getNotes(req.params.module_id, req.user.id);
   res.status(httpStatus.OK).send(note);
@@ -68,6 +88,10 @@ const seedData = catchAsync(async (req, res) => {
 });
 
 module.exports = {
+  getCourseModule,
+  createCourseModule,
+  removeCourseModule,
+  updateCourseModule,
   getNotes,
   takeNote,
   editNote,

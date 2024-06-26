@@ -9,7 +9,11 @@ const moduleController = require('../../controllers/module.controller');
 const router = express.Router();
 
 router.post('/module-log', auth(), moduleController.updateModuleLog);
-router.get('/module/:module_id', auth(), courseController.getCourse);
+router.get('/detail/:courseId', auth(), courseController.getCourse);
+router.get('/detail/:courseId/modules/:moduleId', auth(), moduleController.getCourseModule);
+router.post('/detail/:courseId/modules/', auth(), moduleController.createCourseModule);
+router.delete('/detail/:courseId/modules/:moduleId', auth(), moduleController.removeCourseModule);
+router.put('/detail/:courseId/modules/:moduleId', auth(), moduleController.updateCourseModule);
 router.get('/applied-courses', auth(), courseController.getUserCourse);
 router.post('/module/seed', moduleController.seedData);
 router.post('/:moduleId/update-module-progress', courseController.updateModuleProgress);
