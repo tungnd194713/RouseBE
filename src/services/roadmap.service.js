@@ -251,6 +251,7 @@ const getEducationCourses = async (jobEducationId) => {
   return {
     ...jobEducation.toObject(),
     allCourses: courses,
+		requirements: jobRequirement,
     convertedRequirements,
   };
 }
@@ -314,6 +315,9 @@ const createEducationCourse = async (jobEducationId, body) => {
   if (!course) {
     throw new ApiError(httpStatus.NOT_FOUND, 'Course not found');
   }
+	if (!course.tests || !course.tests.length) {
+    throw new ApiError(httpStatus.UNPROCESSABLE_ENTITY, 'Khóa học này chưa được tạo test!');
+	}
   await JobEducation.updateOne(
     { _id: jobEducationId },
     { $push: { courses: course.id || course._id } },
@@ -330,9 +334,12 @@ const addExistingEducationCourse = async (jobEducationId, courseId) => {
   if (!course) {
     throw new ApiError(httpStatus.NOT_FOUND, 'Course not found');
   }
+	if (!course.tests || !course.tests.length) {
+    throw new ApiError(httpStatus.UNPROCESSABLE_ENTITY, 'Khóa học này chưa được tạo test!');
+	}
   const isAdded = jobEducation.courses.find((item) => item.toString() === courseId.toString());
   if (isAdded) {
-    throw new ApiError(httpStatus.NOT_FOUND, 'Course already added');
+    throw new ApiError(httpStatus.UNPROCESSABLE_ENTITY, 'Course already added');
   }
   await JobEducation.updateOne(
     { _id: jobEducationId },

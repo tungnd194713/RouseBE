@@ -53,5 +53,7 @@ router.post('/invoices/courses/:transactionId', auth(), companyController.payCou
 router.get('/requirement-options', auth(), companyController.getRequirementOptions);
 router.delete('/jobs/:id', auth(), companyController.deleteJob);
 router.post('/seed-subject', companyController.seedSubject);
+router.post('/list', auth('manageCompanies'), companyController.getCompanyList);
+router.put('/update/:companyId', auth('manageCompanies'), companyController.updateCompany);
 
 module.exports = router;

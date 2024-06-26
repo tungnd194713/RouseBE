@@ -1207,10 +1207,12 @@ const getUserModule = async (userId, roadmapId, courseId, moduleId) => {
     },
   });
   const noteList = await Note.find({ module_id: moduleId, user_id: userId });
+	const moduleProgressLog = await ModuleProgressLog.findOne({ video_update_time: { $ne: 0 } }).sort({ createdAt: -1 });
   return {
     userRoadmap,
     course,
     moduleData: moduleData.toObject(),
+		currentVideoTime: moduleProgressLog ? (moduleProgressLog.video_update_time ? moduleProgressLog.video_update_time : 0) : 0, 
     discussion: discussion,
     noteList: noteList,
   }
@@ -1530,6 +1532,12 @@ const submitAnswerSheet = async (userId, roadmapId, courseId, answerSheetId, bod
 				userRoadmap.done_courses.push(courseId);
 			}
       await userRoadmap.save();
+
+			// finish mentor shift
+			await MentorShift.updateMany(
+				{ course: courseId, user: userId, status: 2 },
+				{ $set: { status: 3, date_end: Date.now(), is_finished: true } },
+			);
     }
   }
 

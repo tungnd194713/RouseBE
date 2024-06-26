@@ -74,6 +74,29 @@ const getCompanyJobs = async () => {
 	return Company.insertMany(companiesData);
 }
 
+const getCompanyList = async (options, body) => {
+	const filter = {
+		...body,
+	}
+  const queryOptions = {
+		...options,
+	}
+  return Company.paginate(filter, queryOptions);
+}
+
+const updateCompany = async (companyId, updateBody) => {
+  const company = await Company.findById(companyId);
+  if (!company) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'User not found');
+  }
+  if (updateBody.email && (await User.isEmailTaken(updateBody.email, companyId))) {
+    throw new ApiError(httpStatus.BAD_REQUEST, 'Email already taken');
+  }
+  Object.assign(company, updateBody);
+  await company.save();
+  return company;
+};
+
 const createCompany = async (userBody) => {
   if (await Company.isEmailTaken(userBody.email)) {
     throw new ApiError(httpStatus.BAD_REQUEST, 'Email already taken');
@@ -1714,6 +1737,8 @@ const payCourse = async (companyId, transactionId) => {
 }
 
 module.exports = {
+	getCompanyList,
+	updateCompany,
   createCompany,
 	getCompanyByEmail,
 	getCompanyJobs,

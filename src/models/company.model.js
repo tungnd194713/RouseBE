@@ -44,9 +44,9 @@ const companySchema = new mongoose.Schema({
   video_link: String,
   remember_token: String,
   status: {
-    type: Number,
-    default: 0,
-    enum: [0, 1, 2, 3],
+    type: String,
+    default: 'active',
+    enum: ['active', 'inactive', 'suspended'],
   },
   previous_status: Number,
   reason_deletion: String,

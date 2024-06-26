@@ -3,6 +3,20 @@ const { companyService } = require('../services');
 const catchAsync = require('../utils/catchAsync');
 const ApiError = require('../utils/ApiError');
 
+const getCompanyList = catchAsync(async (req, res) => {
+  const data = await companyService.getCompanyList(req.query, req.body);
+  res.status(httpStatus.OK).send(data);
+});
+
+const updateCompany = catchAsync(async (req, res) => {
+  try {
+    const data = await companyService.updateCompany(req.params.companyId, req.body);
+    res.status(httpStatus.OK).send(data);
+  } catch (e) {
+    throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'Something wrong');
+  }
+});
+
 const me = catchAsync(async (req, res) => {
   const company = await companyService.getCompanyById(req.user._id);
   res.status(httpStatus.OK).send(company);
@@ -25,7 +39,7 @@ const updateCompanyInfo = catchAsync(async (req, res) => {
 
 const getCompanyJobs = catchAsync(async (req, res) => {
   const jobs = await companyService.getCompanyJobs();
-  res.status(httpStatus.OK).send(courses);
+  res.status(httpStatus.OK).send(jobs);
 });
 
 const createJob = catchAsync(async (req, res) => {
@@ -224,6 +238,8 @@ const payCourse = catchAsync(async (req, res) => {
 });
 
 module.exports = {
+	getCompanyList,
+	updateCompany,
 	getCompanyJobs,
 	me,
   updateCompanyInfo,
