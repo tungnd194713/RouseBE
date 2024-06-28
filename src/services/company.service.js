@@ -1595,7 +1595,7 @@ const getProgressStatistic = async (candidateApplyId, companyId) => {
   const answerSheets = await AnswerSheet.find({ user: user.id });
 
   // Step 4: Transform data into the desired format
-  const courseProgressData = userRoadmap.roadmap_milestone.map(milestone => {
+  const courseProgressData = userRoadmap.roadmap_milestone.filter((item) => item.is_unlocked).map(milestone => {
     const course = milestone.course;
 
     // Get modules watch time
@@ -1612,12 +1612,6 @@ const getProgressStatistic = async (candidateApplyId, companyId) => {
 
     const totalWatchTime = modules.reduce((sum, mod) => sum + mod.watch_time, 0);
 
-    // Get test results
-    const testResults = milestone.done_tests.map(testId => {
-      const answerSheet = answerSheets.find(sheet => sheet.testId.toString() === testId.toString() && sheet.isFinished);
-      return answerSheet ? answerSheet?.mark : 0;
-    });
-
     const tests = course?.tests?.map((test) => {
       const answerSheet = answerSheets.find(sheet => (sheet.testId.toString() === test.id?.toString() || sheet.testId.toString() === test._id?.toString()) && sheet.isFinished);
       return {
@@ -1625,22 +1619,22 @@ const getProgressStatistic = async (candidateApplyId, companyId) => {
         name: test.name,
         is_finished: answerSheet ? true : false,
         finished_at: answerSheet?.finishedAt ? answerSheet.finishedAt.toISOString().split('T')[0] : null,
-        max_mark: test.questions.length,
+        max_mark: test.questions?.length || 1,
         mark: answerSheet?.mark || 0,
       };
     })
 
-    const averageTestResult = testResults.length > 0
-      ? testResults.reduce((sum, mark) => sum + mark, 0) / testResults.length
+    const averageTestResult = tests.length > 0
+      ? tests.reduce((sum, test) => sum + (test.mark / test.max_mark), 0) / tests.length
       : 0;
 
     return {
       id: course._id.toString(),
-      courseName: course.name,
+      courseName: course.title,
       started_at: milestone.started_at ? milestone.started_at.toISOString().split('T')[0] : null,
       finished_at: milestone.finished_date ? milestone.finished_date.toISOString().split('T')[0] : null,
       total_watch_time: totalWatchTime,
-      average_test_result: Math.round(averageTestResult),
+      average_test_result: Math.ceil(averageTestResult * 100),
       modules: modules,
       tests: tests,
     };
@@ -1655,7 +1649,7 @@ const getProgressStatistic = async (candidateApplyId, companyId) => {
         total_video_update_time: log.video_update_time - log.video_start_time,
         logId: log.logId,
         user: log.user,
-        created_at: log.created_at,
+        created_at: log.createdAt,
       };
     } else {
       accumulator[key].total_video_update_time += log.video_update_time;
