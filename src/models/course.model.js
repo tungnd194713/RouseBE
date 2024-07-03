@@ -35,6 +35,7 @@ const courseSchema = mongoose.Schema(
     estimated_time: {
       type: Number,
       required: true,
+			default: 10,
     },
     tests: [{
       type: mongoose.Schema.Types.ObjectId,

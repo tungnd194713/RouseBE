@@ -2,7 +2,7 @@ const httpStatus = require('http-status');
 const pick = require('../utils/pick');
 const ApiError = require('../utils/ApiError');
 const catchAsync = require('../utils/catchAsync');
-const { userService, companyService, roadmapService, instructorService } = require('../services');
+const { userService, companyService, roadmapService, instructorService, mentorService } = require('../services');
 const { UserRoadMap, Course } = require('../models');
 
 const createUser = catchAsync(async (req, res) => {
@@ -180,16 +180,24 @@ const getTestById = catchAsync(async (req, res) => {
     }
     let data = {};
     const test = await roadmapService.getTestById(req.params.testId);
+		if (!test) {
+      throw new ApiError(httpStatus.NOT_FOUND, 'Test not found');
+    }
     const answerSheet = await userService.getUserAnswerSheet(req.user._id, test.id);
     data.test = test;
     data.userRoadmap = userRoadmap;
     data.course = course;
+		data.testAvailable = true;
     if (answerSheet) {
       data.answerSheet = answerSheet;
       if (answerSheet.isFinished) {
         data.testKey = await userService.getTestKey(answerSheet.testId);
       }
-    }
+    } else {
+			if (roadmapCourse.done_modules?.length !== course.modules?.length) {
+				data.testAvailable = false
+			}
+		}
     res.status(httpStatus.OK).send(data);
   } catch (e) {
     throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, e);
@@ -268,6 +276,11 @@ const checkJobEducationExisted = catchAsync(async (req, res) => {
   }
 });
 
+const endMentorRequest = catchAsync(async (req, res) => {
+	const data = await mentorService.updateMentorShift(req.params.shiftId, req.body);
+	res.status(httpStatus.OK).send(data);
+});
+
 module.exports = {
   createUser,
   getUsers,
@@ -302,4 +315,5 @@ module.exports = {
   getRoadmapDetail,
   refuseJobEducation,
 	checkJobEducationExisted,
+	endMentorRequest,
 };

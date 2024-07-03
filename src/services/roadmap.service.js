@@ -738,6 +738,14 @@ const deleteQuestionById = async (questionId) => {
   return question;
 };
 
+const getRoadmapById = async (roadmapId) => {
+	const roadmap = await UserRoadMap.findById(roadmapId);
+  if (!roadmap) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'Test not found');
+  }
+  return roadmap;
+}
+
 
 module.exports = {
   findRoadmap,
@@ -778,4 +786,5 @@ module.exports = {
   getInstructorCourseById,
   signAsComplete,
   goToFix,
+	getRoadmapById,
 };

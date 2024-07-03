@@ -321,6 +321,14 @@ function calculateWeeklyHours(shiftDays) {
   }, 0);
 }
 
+const updateMentorShift = async (shiftId, body) => {
+	try {
+		return MentorShift.findByIdAndUpdate(shiftId, { $set: body });
+	} catch (e) {
+		throw new ApiError(httpStatus.BAD_REQUEST, 'Shift not found');
+	}
+}
+
 module.exports = {
   findMentor,
 	seedMentor,
@@ -334,5 +342,6 @@ module.exports = {
 	deleteShift,
 	getRatingList,
 	getMentors,
+	updateMentorShift,
 };
 
