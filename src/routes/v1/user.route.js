@@ -48,6 +48,7 @@ router.get('/educations/detail/:roadmapId', auth(), userController.getRoadmapDet
 router.get('/educations/current', auth(), userController.getCurrentEducation);
 router.post('/educations/:roadmapId/courses/:courseId/unlock', auth(), userController.unlockRoadmapCourse);
 router.post('/educations/courses/:courseId/request-mentors', auth(), userController.requestMentor);
+router.put('/educations/courses/:courseId/end-shifts/:shiftId', auth(), userController.endMentorRequest);
 router.post('/educations/rating-mentor', auth(), userController.addMentorRating);
 router.get('/educations/:roadmapId/courses/:courseId/modules/:moduleId', auth(), userController.getUserModule);
 router.get('/educations/:roadmapId/courses/:courseId/modules/:moduleId/watched', auth(), userController.watchedModule);

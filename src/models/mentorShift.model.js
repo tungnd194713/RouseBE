@@ -18,7 +18,7 @@ const mentorShiftSchema = new Schema({
   status: {
     type: Number,
     required: true,
-    enum: [1, 2, 3, 4], // 1: Gửi yêu cầu, 2: Đang hỗ trợ, 3: Đã hoàn thành, 4: Đã từ chối
+    enum: [1, 2, 3, 4, 5], // 1: Gửi yêu cầu, 2: Đang hỗ trợ, 3: Đã hoàn thành, 4: Đã từ chối, 5: Hủy yêu cầu
   },
   date_start: Date,
   date_end: Date,

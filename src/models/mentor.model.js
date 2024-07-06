@@ -18,7 +18,8 @@ const mentorSchema = mongoose.Schema({
     },
     level: {
       type: Number,
-      enum: [1, 2, 3] //1: Beginner, 2: Intermediate, 3: Advanced
+      enum: [1, 2, 3], //1: Beginner, 2: Intermediate, 3: Advanced
+			default: 3,
     }
   }],
   start_working_date: Date,
