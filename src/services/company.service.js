@@ -471,7 +471,19 @@ const getUserCv = async (candidateApplyId) => {
   if (!candidateApply) {
     throw new ApiError(httpStatus.NOT_FOUND, 'CV not found');
   }
-  const jobEducation = candidateApply.job.accept_education ? await JobEducation.findOne({job: candidateApply.job._id}) : null;
+  const jobEducation = candidateApply.job.accept_education ? await JobEducation.findOne({job: candidateApply.job._id}).populate({
+    path: 'courses',
+    populate: {
+      path: 'modules',
+      model: 'Module',
+    },
+  }).populate({
+    path: 'courses',
+    populate: {
+      path: 'tests',
+      model: 'Test',
+    },
+  }) : null;
 	const profile = await UserProfile.findOne({ user: candidateApply.user }).populate('user skills.skill educations.college educations.major certificates.certificate');
 	return {
     ...candidateApply.toObject(),
@@ -1103,7 +1115,7 @@ const getCVMatchingPoint = async (candidateId, companyId) => {
       doc.userProfile.forEach(profile => {
           switch (profile.type) {
               case 'Certificate':
-                  const certificateData = certificatesMap.get(profile.id).toString();
+                  const certificateData = certificatesMap.get(profile.id.toString());
                   newDoc.userProfile.push({
                     ...profile,
                     name: certificateData ? certificateData.name : '',
@@ -1667,6 +1679,11 @@ const createNewEducationRequest = async (companyId, body) => {
     ...body,
     company: companyId,
   }
+
+  const job = await Job.findById(body.job);
+  if (!job) throw new ApiError(httpStatus.NOT_FOUND, 'Job not found');
+  job.scholarship = body.scholarship;
+  await job.save();
 
   return JobEducation.create(body);
 }

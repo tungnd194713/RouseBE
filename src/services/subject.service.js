@@ -1,5 +1,5 @@
 const httpStatus = require("http-status");
-const { Certificate, CertificateSubjects, Subject, Major, CollegeSubjects } = require("../models");
+const { Certificate, CertificateSubjects, Subject, Major, CollegeSubjects, College } = require("../models");
 const ApiError = require("../utils/ApiError");
 
 const getAllSubject = async (body) => {
@@ -137,8 +137,24 @@ const addCertificate = async (body) => {
 	return Certificate.create(body);
 }
 
+const updateCertificate = async (id, body) => {
+	return Certificate.findByIdAndUpdate(id, body);
+}
+
+const removeCertificate = async (body) => {
+	return Certificate.findByIdAndRemove(body);
+}
+
 const addMajor = async (body) => {
 	return Major.create(body);
+}
+
+const updateMajor = async (id, body) => {
+	return Major.findByIdAndUpdate(id, body);
+}
+
+const removeMajor = async (body) => {
+	return Major.findByIdAndRemove(body);
 }
 
 const getMajors = async (params) => {
@@ -236,6 +252,35 @@ const deleteSubjectFromMajor = async (major_id, subjectId, college_id = null) =>
 	}
 }
 
+const addCollege = async (body) => {
+	return College.create(body);
+}
+
+const updateCollege = async (id, body) => {
+	return College.findByIdAndUpdate(id, body);
+}
+
+const removeCollege = async (body) => {
+	return College.findByIdAndRemove(body);
+}
+
+const getColleges = async (params) => {
+	const searchData = {};
+	if (params.name) {
+		searchData.name = params.name;
+	}
+	const colleges = await College.find({}).limit(params.per_page ? Number(params.per_page) : 10).skip(params.current_page ? (Number(params.current_page) - 1) * Number(params.per_page) : 0);
+	const total = await College.countDocuments();
+	return {
+		data: colleges,
+		meta: {
+			total,
+			per_page: params.per_page,
+			current_page: params.current_page,
+		}
+	}
+}
+
 module.exports = {
 	getAllSubject,
 	getCertificates,
@@ -248,6 +293,14 @@ module.exports = {
 	addCertificate,
   addMajor,
   getMajors,
+  addCollege,
+  getColleges,
 	addSubject,
 	getSubjectList,
+  updateCertificate,
+  removeCertificate,
+  updateMajor,
+  removeMajor,
+  updateCollege,
+  removeCollege,
 }

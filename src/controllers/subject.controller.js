@@ -68,6 +68,46 @@ const addMajor = catchAsync(async (req, res) => {
   res.status(httpStatus.OK).send(result);
 });
 
+const getColleges = catchAsync(async (req, res) => {
+  const result = await subjectService.getColleges(req.query);
+  res.status(httpStatus.OK).send(result);
+});
+
+const addCollege = catchAsync(async (req, res) => {
+  const result = await subjectService.addCollege(req.body);
+  res.status(httpStatus.OK).send(result);
+});
+
+const updateCollege = catchAsync(async (req, res) => {
+  const result = await subjectService.updateCollege(req.params.id, req.body);
+  res.status(httpStatus.OK).send(result);
+});
+
+const removeCollege = catchAsync(async (req, res) => {
+  const result = await subjectService.removeCollege(req.params.id);
+  res.status(httpStatus.OK).send(result);
+});
+
+const updateCertificate = catchAsync(async (req, res) => {
+  const result = await subjectService.updateCertificate(req.params.id, req.body);
+  res.status(httpStatus.OK).send(result);
+});
+
+const removeCertificate = catchAsync(async (req, res) => {
+  const result = await subjectService.removeCertificate(req.params.id);
+  res.status(httpStatus.OK).send(result);
+});
+
+const updateMajor = catchAsync(async (req, res) => {
+  const result = await subjectService.updateMajor(req.params.id, req.body);
+  res.status(httpStatus.OK).send(result);
+});
+
+const removeMajor = catchAsync(async (req, res) => {
+  const result = await subjectService.removeMajor(req.params.id);
+  res.status(httpStatus.OK).send(result);
+});
+
 module.exports = {
   getCertificates,
 	getCertificateSubject,
@@ -82,4 +122,12 @@ module.exports = {
   addMajor,
 	addSubject,
 	getSubjectList,
+  addCollege,
+  getColleges,
+  updateCollege,
+  removeCollege,
+  updateCertificate,
+  removeCertificate,
+  updateMajor,
+  removeMajor,
 };

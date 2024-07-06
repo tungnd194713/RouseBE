@@ -2,7 +2,7 @@
 const httpStatus = require('http-status');
 const mongoose = require('mongoose');
 const ApiError = require('../utils/ApiError');
-const { RoadMap, Milestone, Category, SpecCategory, RoadmapTemplate, UserRoadMap, ModuleProgress, JobEducation, Course, JobRequirement, CertificateSubjects, CollegeSubjects, Module, InstructorCourse, Instructor, Test, Question, AnswerSheet } = require('../models');
+const { RoadMap, Milestone, Category, SpecCategory, RoadmapTemplate, UserRoadMap, ModuleProgress, JobEducation, Course, JobRequirement, CertificateSubjects, CollegeSubjects, Module, InstructorCourse, Instructor, Test, Question, AnswerSheet, Company, Job } = require('../models');
 const { convertRequirements, skillLevelCompare } = require('../helpers/roadmap.helper');
 
 async function findRoadmap(categoryId, subCategoryId, mastery) {
@@ -205,8 +205,18 @@ const getEducationRequests = async (options, params) => {
 		...options,
     populate: 'job,company'
 	}
-  if (params && params.status) {
+  if (params.status) {
     filter.status = params.status;
+  }
+  if (params.companyName) {
+    const companies = await Company.find({company_name: { "$regex": params.companyName, "$options": "i" }})
+    const companyIds = companies.map((item) => item.id || item._id);
+    filter.company = { $in: companyIds }
+  }
+  if (params.jobName) {
+    const jobs = await Job.find({title: { "$regex": params.jobName, "$options": "i" }})
+    const jobIds = jobs.map((item) => item.id || item._id);
+    filter.job = { $in: jobIds }
   }
   const result = await JobEducation.paginate(filter, queryOptions);
   if (!result) {
@@ -522,7 +532,7 @@ const createInstructorCourse = async (jobEducationId, body) => {
 		}
 	}
 	return InstructorCourse.create(instructorCourseParams);
-  
+
 }
 
 const getListInstructorCourse = async (params, options) => {

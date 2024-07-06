@@ -113,6 +113,10 @@ const jobSchema = new mongoose.Schema({
 		type: Boolean,
 		default: false,
 	},
+  scholarship: {
+    type: Number,
+    default: 0,
+  },
   deleted_at: Date,
 }, {
   timestamps: true,
