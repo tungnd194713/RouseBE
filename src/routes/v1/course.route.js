@@ -27,6 +27,7 @@ router.post('/module/:module_id/discussion/:discussion_id/toggle-upvote', auth()
 router.get('/module/:module_id/exam', auth(), moduleController.getExam);
 router.post('/module/:module_id/exam/:exam_id', auth(), moduleController.submitExam);
 router.post('/', auth(), courseController.createCourse);
+router.delete('/:courseId', auth('deleteCourse'), courseController.deleteCourse);
 router.post('/list', auth(), courseController.getCourses);
 router.post('/seed-learning-data/', auth(), courseController.seedLearningData);
 router.post('/:courseId/add-module', auth(), courseController.addModuleToCourse);

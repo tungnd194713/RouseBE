@@ -27,6 +27,7 @@ const mentorSchema = mongoose.Schema({
   status: {
     type: Number,
     enum: [1, 2, 3],
+    default: 1,
   },
   weekdays: {
     monday: {

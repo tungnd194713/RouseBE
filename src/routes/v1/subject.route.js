@@ -22,7 +22,7 @@ router.delete('/certificates/:id/subjects/:subject_id', auth('manageSkills'), su
 router.get('/majors/:id/subjects', auth('manageSkills'), subjectController.getMajorSubject);
 router.post('/majors/:id/subjects', auth('manageSkills'), subjectController.addSubjectToMajor);
 router.delete('/majors/:id/subjects/:subject_id', auth('manageSkills'), subjectController.deleteSubjectFromMajor);
-router.post('/subjects', auth('manageSkills'), subjectController.getAllSubject);
+router.post('/subjects', auth(), subjectController.getAllSubject);
 router.post('/subjects/list', auth('manageSkills'), subjectController.getSubjectList);
 router.post('/subjects/create', auth('manageSkills'), subjectController.addSubject);
 

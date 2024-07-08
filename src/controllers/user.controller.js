@@ -80,10 +80,16 @@ const findJob = catchAsync(async (req, res) => {
   res.status(httpStatus.OK).send(data);
 });
 
-const suggestJobs = catchAsync(async (req, res) => {
-  const data = await userService.suggestJobs(req.user?._id, req.body);
+const getListJob = catchAsync(async (req, res) => {
+  const data = await userService.guestJobs(req.body, req.query)
   res.status(httpStatus.OK).send(data);
 });
+
+const suggestJobs = catchAsync(async (req, res) => {
+  let data = await userService.suggestJobs(req.user._id, req.body);
+  res.status(httpStatus.OK).send(data);
+});
+
 
 const getDetailJob = catchAsync(async (req, res) => {
   const data = await userService.getDetailJob(req.user._id, req.params.jobId);
@@ -293,6 +299,7 @@ module.exports = {
   updateUserProfile,
 	getJobMatchingPoint,
   findJob,
+  getListJob,
   suggestJobs,
 	getDetailJob,
   applyJob,

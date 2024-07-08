@@ -38,7 +38,8 @@ router.post('/profile/update-info-basic', upload.none(), auth(), userController.
 router.post('/profile/update-info-advanced', upload.none(), auth(), userController.updateUserProfile);
 router.get('/jobs/:jobId/matching-point', auth(), userController.getJobMatchingPoint);
 router.post('/jobs/find', auth(), userController.findJob);
-router.post('/jobs/suggest', userController.suggestJobs);
+router.post('/jobs/list', userController.getListJob);
+router.post('/jobs/suggest', auth(), userController.suggestJobs);
 router.get('/jobs/:jobId', auth(), userController.getDetailJob);
 router.post('/candidate-applies/', upload.none(), auth(), userController.applyJob);
 router.post('/candidate-applies/:candidateApplyId/start-education', auth(), userController.startJobEducation);

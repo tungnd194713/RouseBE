@@ -1,6 +1,6 @@
 // const httpStatus = require('http-status');
 const mongoose = require('mongoose');
-const { ModuleProgress, User, Module, Course, Subject, CourseTransaction, Test, Question, JobEducation } = require('../models');
+const { ModuleProgress, User, Module, Course, Subject, CourseTransaction, Test, Question, JobEducation, InstructorCourse } = require('../models');
 const ApiError = require('../utils/ApiError');
 
 const { OpenAI} = require('openai');
@@ -143,6 +143,35 @@ const createCourse = async (body) => {
 	}
 
 	return Course.create(data);
+}
+
+const deleteCourse = async (courseId) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    // Find the course by ID
+    const course = await Course.findById(courseId).session(session);
+    if (!course) {
+      throw new ApiError(httpStatus.NOT_FOUND, 'Course not found');
+    }
+    // Delete associated modules
+    await Module.deleteMany({ _id: { $in: course.modules } }).session(session);
+    // Delete associated tests
+    await Test.deleteMany({ _id: { $in: course.tests } }).session(session);
+    // Delete associated instructor course
+    await InstructorCourse.deleteOne({ course: courseId }).session(session);
+    // Delete the course
+    await Course.findByIdAndDelete(courseId).session(session);
+    // Commit the transaction
+    await session.commitTransaction();
+    session.endSession();
+    return 'Course deleted'
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    throw new ApiError(httpStatus.NOT_FOUND, error.message || 'Course not found');
+  }
 }
 
 const updateCourseInfo = async (courseId, body) => {
@@ -473,6 +502,7 @@ module.exports = {
   updateModuleProgress,
   getUserCourse,
 	createCourse,
+  deleteCourse,
 	addModuleToCourse,
 	getCourses,
 	findCourseById,

@@ -276,7 +276,7 @@ const findJob = async (body, query) => {
 const suggestLogic = (jobRequirements, userSubjects, certificateIds, majorIds, certificateObjects, majorObjects) => {
 	let jobPoint = 0;
 	let userJobPoint = 0;
-	const needToLearnSkill = [];
+	let needToLearnSkill = [];
   const jobMatchingData = [];
 	const certificateRequirements = jobRequirements.filter((item) => item.type === 'Certificate').map((item) => item.certificates.map((iitem) => iitem.id));
 	const majorRequirements = jobRequirements.filter((item) => item.type === 'Major').map((item) => item.majors.map((iitem) => iitem.id));
@@ -489,6 +489,7 @@ const suggestLogic = (jobRequirements, userSubjects, certificateIds, majorIds, c
 			}
 		}
 	})
+  needToLearnSkill = needToLearnSkill.flat();
 	skillRequirements.forEach((skills) => {
 		let suitableSkill = false;
 		const skillLevel = skills.level
@@ -503,7 +504,9 @@ const suggestLogic = (jobRequirements, userSubjects, certificateIds, majorIds, c
 								level: skillLevel,
 								skill,
 							});
-						}
+						} else {
+              needToLearnSkill = needToLearnSkill.filter((skill_item) => skill_item.skill.toString() !== skill.toString());
+            }
 						suitableSkill = true;
             jobMatchingData.push({
               jobRequirement: {
@@ -547,6 +550,64 @@ const suggestLogic = (jobRequirements, userSubjects, certificateIds, majorIds, c
 		needToLearnSkill,
     jobMatchingData,
 	}
+}
+
+const guestJobs = async (params, query) => {
+  const body = {
+    status: 1,
+  }
+  if (params.salary_min) {
+    body.salary_min = { $gte: params.salary_min }
+  }
+  if (params.salary_max) {
+    body.salary_max = { $gte: params.salary_max }
+  }
+  if (params.province_id) {
+    body.salary_max = params.province_id
+  }
+  if (params.title?.trim()) {
+    body.title = { "$regex": params.title.trim(), "$options": "i" }
+  }
+
+  const queryOptions = {
+    ...query,
+    populate: 'jobEducation,jobRequirements',
+    sortBy: 'accept_education:desc,scholarship:desc'
+  }
+
+  const jobCollections = await Job.paginate(body, queryOptions);
+  const jobIds = jobCollections.results.map((item) => item._id);
+  const requirements = await JobRequirement.find({ job: { $in: jobIds } }).populate('skills certificates majors colleges');
+
+  const availableJobs = jobCollections.results.map((job) => {
+		const education = job.jobEducation?.length ? job.jobEducation[0] : job.jobEducation;
+    const jobRequirements = requirements.filter((item) => item.job.toString() === job._id.toString());
+    const previewSkills = requirements.filter(item => item.type === 'Skill').map(obj => obj.skills).slice(0, 3);
+
+    return {
+      ...job.toObject(),
+			date_start: job.date_start ? formatDate(job.date_start) : null,
+			date_end: job.date_start ? addMonthsToDate(job.date_start, job.display_month) : null,
+      educationReady: (education && education.status === 3) ? true : false,
+			max_education_month: (education && education.status === 3) ? education.max_education_month : null,
+			scholarship: (education && education.status === 3) ? education.scholarship : null,
+			id: job._id,
+			requirements: jobRequirements,
+      job_point: null,
+      user_job_point: null,
+			matching_point: 0,
+      previewSkills,
+    }
+  })
+
+  return {
+		data: availableJobs,
+		meta: {
+			total: availableJobs.length,
+			current_page: 1,
+			per_page: 10,
+		}
+	};
 }
 
 const suggestJobs = async (userId, params) => {
@@ -611,7 +672,6 @@ const suggestJobs = async (userId, params) => {
 
   availableJobs = availableJobs.map((job) => {
 		const education = educations.find(edu => edu.job.toString() === job._id.toString());
-    console.log(education)
     const jobRequirements = requirements.filter((item) => item.job.toString() === job._id.toString());
     const previewSkills = requirements.filter(item => item.type === 'Skill').map(obj => obj.skills).slice(0, 3);
 
@@ -856,23 +916,25 @@ const getDetailJob = async (userId, jobId) => {
   let userRoadmaps = await UserRoadMap.find({ user: userId });
   const doneCourses = userRoadmaps.map((roadmap) => roadmap.done_courses.map((course) => course.toString())).flat();
 
-	const roadmapCourses = education.courses.map((course) => {
+  const roadmapCourses = [];
+	education.courses.forEach((course) => {
     const timeCost = course.modules.reduce((acc, module) => acc + module.estimated_time, 0);
     const item = matchedLearning.find((tag) => tag.skill.toString() === course.skill_tags[0].skill.toString() && tag.level === course.skill_tags[0].level);
     let courseLearned = false;
     if (doneCourses.includes(course.id.toString()) || doneCourses.includes(course._id.toString())) {
       courseLearned = true;
     }
-
-    return {
-      ...course.toObject(),
-      id: course._id || course.id,
-      _id: course._id || course.id,
-      timeCost,
-      tag: {
-        name: item,
-      },
-      courseLearned,
+    if (item) {
+      roadmapCourses.push({
+        ...course.toObject(),
+        id: course._id || course.id,
+        _id: course._id || course.id,
+        timeCost,
+        tag: {
+          name: item,
+        },
+        courseLearned,
+      });
     }
   });
 
@@ -1212,7 +1274,7 @@ const getUserModule = async (userId, roadmapId, courseId, moduleId) => {
     userRoadmap,
     course,
     moduleData: moduleData.toObject(),
-		currentVideoTime: moduleProgressLog ? (moduleProgressLog.video_update_time ? moduleProgressLog.video_update_time : 0) : 0, 
+		currentVideoTime: moduleProgressLog ? (moduleProgressLog.video_update_time ? moduleProgressLog.video_update_time : 0) : 0,
     discussion: discussion,
     noteList: noteList,
   }
@@ -1728,6 +1790,7 @@ module.exports = {
   updateUserProfile,
 	jobMatchingPoint,
   findJob,
+  guestJobs,
   suggestJobs,
 	getDetailJob,
   applyJob,
