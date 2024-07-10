@@ -756,6 +756,24 @@ const getRoadmapById = async (roadmapId) => {
   return roadmap;
 }
 
+const replyChangeRequest = async (jobEducationId, requestId, updateData) => {
+	try {
+    const setObject = {};
+    for (const key in updateData) {
+      if (updateData.hasOwnProperty(key)) {
+        setObject[`change_requests.$.${key}`] = updateData[key];
+      }
+    }
+
+    await JobEducation.updateOne(
+      { _id: jobEducationId, 'change_requests._id': requestId },
+      { $set: setObject }
+    );
+		return 'Request replied'
+  } catch (err) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'Something wrong');
+  }
+}
 
 module.exports = {
   findRoadmap,
@@ -797,4 +815,5 @@ module.exports = {
   signAsComplete,
   goToFix,
 	getRoadmapById,
+	replyChangeRequest,
 };

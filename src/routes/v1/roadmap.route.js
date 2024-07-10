@@ -23,6 +23,7 @@ router.post('/education-requests', auth(), roadmapController.getEducationRequest
 router.get('/education-requests/:jobEducationId', auth(), roadmapController.getEducationCourses);
 router.get('/education-requests/:jobEducationId/check', auth(), roadmapController.checkEducationRoadmap);
 router.get('/education-requests/:jobEducationId/send', auth(), roadmapController.sendEducationRoadmap);
+router.post('/education-requests/:jobEducationId/change-requests/:requestId/reply', auth(), roadmapController.replyChangeRequest);
 router.get('/education-requests/:jobEducationId/courses/:courseId', auth(), roadmapController.getCourseDetail);
 router.post('/education-requests/:jobEducationId/courses/create', upload.none(), auth(), roadmapController.createEducationCourse);
 router.post('/education-requests/:jobEducationId/courses/:courseId', auth(), roadmapController.addExistingEducationCourse);

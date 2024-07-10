@@ -62,7 +62,10 @@ const jobEducationSchema = mongoose.Schema(
         },
         replied_date: {
           type: Date,
-        }
+        },
+				reject_reason: {
+					type: String,
+				}
       }
     ],
 		published_at: {

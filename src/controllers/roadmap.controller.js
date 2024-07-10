@@ -362,6 +362,11 @@ const updateInstructorCourseStatus = catchAsync(async (req, res) => {
   }
 });
 
+const replyChangeRequest = catchAsync(async (req, res) => {
+	const result = await roadmapService.replyChangeRequest(req.params.jobEducationId, req.params.requestId, req.body);
+	res.status(httpStatus.OK).send(result);
+});
+
 module.exports = {
   fetchCategories,
   fetchSpecCategories,
@@ -404,4 +409,5 @@ module.exports = {
   getInstructorCourseById,
   signAsComplete,
   goToFix,
+	replyChangeRequest,
 };

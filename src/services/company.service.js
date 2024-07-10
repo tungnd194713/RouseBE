@@ -1236,7 +1236,6 @@ const toggleJobEducation = async (jobId, companyId) => {
 }
 
 const sendChangeRequest = async (jobId, companyId, body) => {
-  console.log(jobId, companyId)
   const job = await Job.findOne({ _id: jobId, company_id: companyId });
 
   if (!job) throw new ApiError(httpStatus.NOT_FOUND, 'Job not found');
@@ -1247,7 +1246,7 @@ const sendChangeRequest = async (jobId, companyId, body) => {
   await JobEducation.updateOne(
     { _id: jobEducation.id || jobEducation._id },
     {
-      $push: { change_requests: body.change_request },
+      $push: { change_requests: body },
       $set: { status: 4 }
     }
   );
