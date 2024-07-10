@@ -43,6 +43,10 @@ const jobEducationSchema = mongoose.Schema(
     }],
     change_requests: [
       {
+        title: {
+          type: String,
+          required: true,
+        },
         content: {
           type: String,
           required: true,
@@ -51,10 +55,14 @@ const jobEducationSchema = mongoose.Schema(
           type: Date,
           default: Date.now(),
         },
-        is_read: {
-          type: Boolean,
-          default: false
+        status: {
+          type: Number,
+          default: 0,
+          enum: [0, 1, 2],
         },
+        replied_date: {
+          type: Date,
+        }
       }
     ],
 		published_at: {
