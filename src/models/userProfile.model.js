@@ -41,7 +41,9 @@ const userProfileSchema = new Schema({
       type: Number
     }
   }],
-  introduction: { type: String }
+  introduction: { type: String },
+  strength: { type: String },
+  reason_apply: { type: String },
 });
 
 const UserProfile = mongoose.model('UserProfile', userProfileSchema);

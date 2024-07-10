@@ -234,7 +234,8 @@ const updateUserProfile = async (userId, body) => {
   if (body?.jobs) {
     profile.working_experiences = body?.jobs;
   }
-  profile.introduction = body?.strength;
+  profile.strength = body?.strength;
+  profile.reason_apply = body?.reason_apply;
 
   await profile.save();
   return {candidate: {...user.toObject(), ...profile.toObject()}}
