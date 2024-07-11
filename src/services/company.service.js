@@ -1600,7 +1600,7 @@ const getProgressStatistic = async (candidateApplyId, companyId) => {
   const courseArr = userRoadmap.roadmap_milestone.map((item) => item.course.id || item.course._id);
 
   // Step 2: Fetch module progress logs
-  let moduleProgressLogs = await ModuleProgressLog.find({ user: user.id, course: { $in: courseArr } });
+  let moduleProgressLogs = await ModuleProgressLog.find({ user: user.id, course: { $in: courseArr }, $expr: { $lt: ["$video_start_time", "$video_update_time"] } });
 
   // Step 3: Fetch test results
   const answerSheets = await AnswerSheet.find({ user: user.id });
@@ -1617,7 +1617,7 @@ const getProgressStatistic = async (candidateApplyId, companyId) => {
       return {
         id: mod._id?.toString(),
         name: mod.name,
-        watch_time: Math.round(totalWatchTime),
+        watch_time: Math.round(totalWatchTime / 60),
       };
     });
 
@@ -1663,7 +1663,7 @@ const getProgressStatistic = async (candidateApplyId, companyId) => {
         created_at: log.createdAt,
       };
     } else {
-      accumulator[key].total_video_update_time += log.video_update_time;
+      accumulator[key].total_video_update_time += log.video_update_time - log.video_start_time;
     }
     return accumulator;
   }, {});
