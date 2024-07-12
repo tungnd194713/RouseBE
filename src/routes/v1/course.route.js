@@ -35,7 +35,7 @@ router.post('/:courseId/', auth(), courseController.findCourseById);
 router.put('/:courseId/', upload.none(), auth(), courseController.updateCourseInfo);
 router.post('/transactions/list', auth(), courseController.getCourseTransactions);
 // router.post('/module/:module_id/discussion/:discussion_id/reply', courseController.updateModuleProgress);
-router.delete('/seed-course-module', courseController.seedModuleData);
-router.delete('/seed-test-question', courseController.seedQuestionData);
+router.patch('/seed-course-module', courseController.seedModuleData);
+router.patch('/seed-test-question', courseController.seedQuestionData);
 
 module.exports = router;
