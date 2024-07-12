@@ -1270,7 +1270,7 @@ const getUserModule = async (userId, roadmapId, courseId, moduleId) => {
     },
   });
   const noteList = await Note.find({ module_id: moduleId, user_id: userId });
-	const moduleProgressLog = await ModuleProgressLog.findOne({ video_update_time: { $ne: 0 } }).sort({ createdAt: -1 });
+	const moduleProgressLog = await ModuleProgressLog.findOne({ video_update_time: { $ne: 0 }, module: moduleId }).sort({ createdAt: -1 });
   return {
     userRoadmap,
     course,
