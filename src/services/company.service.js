@@ -429,6 +429,7 @@ const deleteJob = async (job_id) => {
   } else {
     await Job.deleteOne({_id: job_id})
     await JobRequirement.deleteMany({job: job_id})
+    await JobEducation.deleteMany({job: job_id})
     return true;
   }
 }
